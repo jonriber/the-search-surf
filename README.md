@@ -4,7 +4,7 @@ The Search is an open-source, self-hostable surf intelligence PWA that combines 
 
 ## Status
 
-The project is in its foundation phase. The current work establishes its product boundaries, architecture, security model, and delivery conventions before feature development begins.
+The project is in its foundation phase. A production-shaped vertical slice now proves the installable PWA, same-origin API boundary, health and release contracts, hardened containers, and pull-request quality gates. Surf-domain features are the next milestone.
 
 ## Product objective
 
@@ -46,19 +46,39 @@ The decisions and their trade-offs are recorded in [`docs/adr`](docs/adr/README.
 ## Repository map
 
 ```text
+api/openapi/     Versioned HTTP contract
+backend/         Go API and production container
+frontend/        React and TypeScript PWA and production container
 docs/
   adr/           Architectural decision records
   architecture/  System boundaries and technical direction
+  operations/    Development, CI/CD, and runtime guidance
   product/       Vision, scope, and domain language
   security/      Threat model and security guidance
-.github/          Contribution and repository governance
+.github/          Repository governance and automation
+scripts/          Repeatable operational checks
 ```
 
-Application, deployment, and API directories will be added as their foundations are implemented.
+## Run the foundation slice
+
+Install the pinned Go and Node.js versions, then run the local quality contract:
+
+```sh
+npm ci --prefix frontend
+make verify
+```
+
+To exercise the production containers and the PWA-to-API proxy:
+
+```sh
+make compose-smoke
+```
+
+For an interactive local stack, run `make compose-up` and open <http://127.0.0.1:8081>. Stop it with `make compose-down`.
 
 ## Contributing
 
-The project is not yet accepting feature implementations while the foundation is being established. Design discussion and documented challenges are welcome. See [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`SECURITY.md`](SECURITY.md).
+Every change starts from an issue, preserves the documented boundaries, and passes the same verification locally and in CI. See [`CONTRIBUTING.md`](CONTRIBUTING.md), the [development workflow](docs/operations/development.md), the [CI/CD contract](docs/operations/ci-cd.md), and [`SECURITY.md`](SECURITY.md).
 
 ## License
 
