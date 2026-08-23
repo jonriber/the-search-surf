@@ -1,0 +1,32 @@
+name: Architecture decision proposal
+description: Propose a decision that may require an ADR
+title: "[Architecture]: "
+labels:
+  - architecture
+body:
+  - type: textarea
+    id: context
+    attributes:
+      label: Context and forces
+      description: What constraints and quality attributes require a decision?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed decision
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Credible alternatives
+    validations:
+      required: true
+  - type: textarea
+    id: consequences
+    attributes:
+      label: Consequences
+      description: Include security, operational, migration, and reversibility costs.
+    validations:
+      required: true

@@ -1,0 +1,30 @@
+name: Feature proposal
+description: Propose a product capability grounded in a user problem
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: User problem
+      description: Describe the unmet need without prescribing implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: What observable result would solve the problem?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Include manual workflows or simpler changes.
+  - type: textarea
+    id: consequences
+    attributes:
+      label: Consequences and risks
+      description: Consider privacy, safety, data quality, maintenance, and operations.

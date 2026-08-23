@@ -1,0 +1,35 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Go
+bin/
+coverage/
+*.coverprofile
+
+# Node and web builds
+node_modules/
+dist/
+.vite/
+.turbo/
+
+# Test and analysis output
+test-results/
+playwright-report/
+*.sarif
+
+# IDE and operating system
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Local infrastructure state
+.terraform/
+*.tfstate
+*.tfstate.*
+kubeconfig*
