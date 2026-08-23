@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="The Search wave mark">
+  <rect width="512" height="512" rx="112" fill="#061b26"/>
+  <path d="M72 310c74-12 97-93 176-93 65 0 81 55 125 55 30 0 50-20 67-50-6 112-70 204-183 204-88 0-154-48-185-116Z" fill="#56d6c9"/>
+  <path d="M72 310c82-2 111 55 180 55 44 0 85-22 121-67-18 78-69 128-135 128-81 0-139-42-166-116Z" fill="#0b7890"/>
+  <circle cx="343" cy="167" r="42" fill="#f8c86b"/>
+</svg>

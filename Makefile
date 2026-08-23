@@ -2,7 +2,7 @@ SHELL := /bin/sh
 
 .DEFAULT_GOAL := help
 
-.PHONY: help repository-check backend-format backend-format-check backend-vet backend-test backend-test-race backend-build backend-verify verify
+.PHONY: help repository-check backend-format backend-format-check backend-vet backend-test backend-test-race backend-build backend-verify frontend-format frontend-format-check frontend-lint frontend-test frontend-build frontend-verify verify
 
 help: ## Show available repository commands
 	@awk 'BEGIN {FS = ":.*## "; printf "Available commands:\n"} /^[a-zA-Z_-]+:.*## / {printf "  %-20s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -31,4 +31,22 @@ backend-build: ## Build the Go API
 backend-verify: ## Run every Go backend quality check
 	$(MAKE) -C backend verify
 
-verify: repository-check backend-verify ## Run every quality check currently implemented
+frontend-format: ## Format PWA source
+	$(MAKE) -C frontend format
+
+frontend-format-check: ## Verify PWA source formatting
+	$(MAKE) -C frontend format-check
+
+frontend-lint: ## Run PWA static analysis
+	$(MAKE) -C frontend lint
+
+frontend-test: ## Run PWA tests with coverage
+	$(MAKE) -C frontend test
+
+frontend-build: ## Build the production PWA
+	$(MAKE) -C frontend build
+
+frontend-verify: ## Run every PWA quality check
+	$(MAKE) -C frontend verify
+
+verify: repository-check backend-verify frontend-verify ## Run every quality check currently implemented
