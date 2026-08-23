@@ -1,3 +1,4 @@
+// Package main assembles and runs The Search API process.
 package main
 
 import (

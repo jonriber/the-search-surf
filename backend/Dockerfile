@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.20
 
-ARG GO_IMAGE=golang:1.26.1-alpine@sha256:2389ebfa5b7f43eeafbd6be0c3700cc46690ef842ad962f6c5bd6be49ed82039
+ARG GO_IMAGE=golang:1.26.6-alpine@sha256:3889b425f035be855a72fb4755265311293b6d414521f0a519d819df32222d83
 FROM ${GO_IMAGE} AS build
 
 WORKDIR /src

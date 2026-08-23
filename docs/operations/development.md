@@ -4,7 +4,7 @@
 
 The repository records its current development toolchain in `.tool-versions` and `.nvmrc`:
 
-- Go 1.26.1
+- Go 1.26.6
 - Node.js 24.14.1
 - npm distributed with the selected Node.js release
 - Docker with Compose v2 support

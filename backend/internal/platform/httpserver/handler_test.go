@@ -28,7 +28,7 @@ func TestHealthAndVersionContracts(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			request := httptest.NewRequest(http.MethodGet, tt.path, nil)
+			request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, tt.path, nil)
 			response := httptest.NewRecorder()
 
 			handler.ServeHTTP(response, request)
@@ -56,7 +56,7 @@ func TestReadinessFailure(t *testing.T) {
 		ReadinessCheck: func(context.Context) error { return errors.New("dependency unavailable") },
 	})
 	response := httptest.NewRecorder()
-	handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/health/ready", nil))
+	handler.ServeHTTP(response, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/health/ready", nil))
 
 	if response.Code != http.StatusServiceUnavailable {
 		t.Fatalf("status = %d, want %d", response.Code, http.StatusServiceUnavailable)
@@ -72,7 +72,7 @@ func TestRequestIDHandling(t *testing.T) {
 	handler := NewHandler(HandlerOptions{})
 
 	t.Run("preserves valid caller identifier", func(t *testing.T) {
-		request := httptest.NewRequest(http.MethodGet, "/health/live", nil)
+		request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/health/live", nil)
 		request.Header.Set(requestIDHeader, "caller-123")
 		response := httptest.NewRecorder()
 		handler.ServeHTTP(response, request)
@@ -83,7 +83,7 @@ func TestRequestIDHandling(t *testing.T) {
 	})
 
 	t.Run("replaces unsafe caller identifier", func(t *testing.T) {
-		request := httptest.NewRequest(http.MethodGet, "/health/live", nil)
+		request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/health/live", nil)
 		request.Header.Set(requestIDHeader, "unsafe identifier")
 		response := httptest.NewRecorder()
 		handler.ServeHTTP(response, request)
@@ -99,7 +99,7 @@ func TestMethodNotAllowed(t *testing.T) {
 
 	handler := NewHandler(HandlerOptions{})
 	response := httptest.NewRecorder()
-	handler.ServeHTTP(response, httptest.NewRequest(http.MethodPost, "/health/live", nil))
+	handler.ServeHTTP(response, httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/health/live", nil))
 
 	if response.Code != http.StatusMethodNotAllowed {
 		t.Fatalf("status = %d, want %d", response.Code, http.StatusMethodNotAllowed)

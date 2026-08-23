@@ -3,6 +3,13 @@ info:
   title: The Search API
   version: 0.1.0
   description: HTTP contract for The Search backend.
+  license:
+    name: Apache-2.0
+    identifier: Apache-2.0
+servers:
+  - url: /api
+    description: Same-origin API proxy
+security: []
 paths:
   /health/live:
     get:
@@ -22,6 +29,8 @@ paths:
                 live:
                   value:
                     status: ok
+        "405":
+          description: Method not allowed
   /health/ready:
     get:
       operationId: getReadiness
@@ -39,6 +48,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthResponse"
+        "405":
+          description: Method not allowed
   /version:
     get:
       operationId: getVersion
@@ -50,6 +61,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/VersionResponse"
+        "405":
+          description: Method not allowed
 components:
   headers:
     RequestID:

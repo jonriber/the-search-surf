@@ -21,6 +21,7 @@ dist/
 test-results/
 playwright-report/
 *.sarif
+*.spdx.json
 
 # IDE and operating system
 .DS_Store

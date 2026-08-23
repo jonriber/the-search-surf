@@ -34,10 +34,13 @@ func Check(ctx context.Context, listenAddress string, client HTTPClient) error {
 	if err != nil {
 		return fmt.Errorf("request readiness endpoint: %w", err)
 	}
-	defer response.Body.Close()
+	statusCode := response.StatusCode
+	if err := response.Body.Close(); err != nil {
+		return fmt.Errorf("close readiness response: %w", err)
+	}
 
-	if response.StatusCode != http.StatusOK {
-		return fmt.Errorf("readiness endpoint returned status %d", response.StatusCode)
+	if statusCode != http.StatusOK {
+		return fmt.Errorf("readiness endpoint returned status %d", statusCode)
 	}
 
 	return nil

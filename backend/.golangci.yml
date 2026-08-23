@@ -1,0 +1,21 @@
+version: "2"
+
+run:
+  timeout: 5m
+
+linters:
+  default: standard
+  enable:
+    - bodyclose
+    - errorlint
+    - exhaustive
+    - gosec
+    - nilerr
+    - noctx
+    - revive
+    - sloglint
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
