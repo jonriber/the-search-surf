@@ -1,0 +1,97 @@
+openapi: 3.1.0
+info:
+  title: The Search API
+  version: 0.1.0
+  description: HTTP contract for The Search backend.
+  license:
+    name: Apache-2.0
+    identifier: Apache-2.0
+servers:
+  - url: /api
+    description: Same-origin API proxy
+security: []
+paths:
+  /health/live:
+    get:
+      operationId: getLiveness
+      summary: Confirm that the API process is alive
+      responses:
+        "200":
+          description: Process is alive
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/RequestID"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+              examples:
+                live:
+                  value:
+                    status: ok
+        "405":
+          description: Method not allowed
+  /health/ready:
+    get:
+      operationId: getReadiness
+      summary: Confirm that the API can receive traffic
+      responses:
+        "200":
+          description: API is ready
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+        "503":
+          description: A required dependency is unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+        "405":
+          description: Method not allowed
+  /version:
+    get:
+      operationId: getVersion
+      summary: Identify the running release artifact
+      responses:
+        "200":
+          description: Build identity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VersionResponse"
+        "405":
+          description: Method not allowed
+components:
+  headers:
+    RequestID:
+      description: Correlation identifier for the request
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+  schemas:
+    HealthResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+            - ready
+            - unavailable
+    VersionResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - version
+        - commit
+      properties:
+        version:
+          type: string
+        commit:
+          type: string

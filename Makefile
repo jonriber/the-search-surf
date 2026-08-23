@@ -1,0 +1,73 @@
+SHELL := /bin/sh
+
+.DEFAULT_GOAL := help
+
+.PHONY: help repository-check api-lint backend-format backend-format-check backend-vet backend-lint backend-vulnerability-check backend-test backend-test-race backend-build backend-verify frontend-format frontend-format-check frontend-lint frontend-test frontend-build frontend-verify container-build compose-up compose-down compose-smoke verify
+
+help: ## Show available repository commands
+	@awk 'BEGIN {FS = ":.*## "; printf "Available commands:\n"} /^[a-zA-Z_-]+:.*## / {printf "  %-20s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+
+repository-check: ## Validate repository-level text and patch hygiene
+	git diff --check
+
+api-lint: ## Validate the OpenAPI contract
+	npm_config_cache="$(CURDIR)/.cache/npm" npx --yes @redocly/cli@2.47.0 lint api/openapi/the-search.yaml
+
+backend-format: ## Format Go backend source
+	$(MAKE) -C backend format
+
+backend-format-check: ## Verify Go backend formatting
+	$(MAKE) -C backend format-check
+
+backend-vet: ## Run Go static analysis
+	$(MAKE) -C backend vet
+
+backend-lint: ## Run the pinned Go linter suite
+	$(MAKE) -C backend lint
+
+backend-vulnerability-check: ## Check Go dependencies and call paths for known vulnerabilities
+	$(MAKE) -C backend vulnerability-check
+
+backend-test: ## Run Go backend tests
+	$(MAKE) -C backend test
+
+backend-test-race: ## Run Go backend tests with race detection
+	$(MAKE) -C backend test-race
+
+backend-build: ## Build the Go API
+	$(MAKE) -C backend build
+
+backend-verify: ## Run every Go backend quality check
+	$(MAKE) -C backend verify
+
+frontend-format: ## Format PWA source
+	$(MAKE) -C frontend format
+
+frontend-format-check: ## Verify PWA source formatting
+	$(MAKE) -C frontend format-check
+
+frontend-lint: ## Run PWA static analysis
+	$(MAKE) -C frontend lint
+
+frontend-test: ## Run PWA tests with coverage
+	$(MAKE) -C frontend test
+
+frontend-build: ## Build the production PWA
+	$(MAKE) -C frontend build
+
+frontend-verify: ## Run every PWA quality check
+	$(MAKE) -C frontend verify
+
+container-build: ## Build the production API and PWA images
+	docker compose build
+
+compose-up: ## Start the local production-shaped stack
+	docker compose up --build --detach --wait
+
+compose-down: ## Stop the local production-shaped stack
+	docker compose down --remove-orphans
+
+compose-smoke: ## Build and smoke-test the local production-shaped stack
+	./scripts/compose-smoke.sh
+
+verify: repository-check api-lint backend-verify frontend-verify ## Run every quality check currently implemented

@@ -11,6 +11,20 @@ Forecast providers ──► The Search ──► Surfer
 
 The Search consumes untrusted external forecast data, applies versioned domain rules, stores recommendations and provenance, and presents results through an installable PWA.
 
+## Implemented foundation slice
+
+```text
+Browser / installed PWA ──► unprivileged nginx ──/api/*──► Go API
+          │                         │                            │
+          └── cached app shell      └── security headers        ├── liveness
+                                                              ├── readiness
+                                                              └── release identity
+```
+
+The browser uses only same-origin `/api` URLs. nginx owns routing at the deployment edge, so the PWA does not embed a homelab address and the API does not need permissive cross-origin rules. The client caches the application shell and the last successfully validated release identity; it does not cache arbitrary API responses.
+
+The API currently exposes `/health/live`, `/health/ready`, and `/version`. Its OpenAPI description under `api/openapi` is the transport contract. HTTP concerns live under `internal/platform`; surf-domain packages will be introduced only with the first domain behavior.
+
 ## Target containers
 
 ```text
@@ -40,10 +54,11 @@ Module boundaries are not service boundaries. Extraction requires evidence such 
 
 ## Deployment direction
 
-- GitHub Actions validates source and publishes immutable OCI images.
+- GitHub Actions currently validates source and local OCI images.
+- A future trusted release workflow will publish immutable OCI images by digest.
 - A private environment repository records desired homelab state.
 - Argo CD reconciles that state into Kubernetes.
 - Public CI does not possess Kubernetes credentials.
 - Administrative surfaces remain reachable only through the private network.
 
-The current homelab is Docker-based. Kubernetes and Argo CD are target-state capabilities and must not be documented as operational until verified.
+The current verified runtime is Docker Compose with loopback-only host ports, read-only filesystems, dropped Linux capabilities, and non-root processes. Kubernetes and Argo CD are target-state capabilities and must not be documented as operational until verified.

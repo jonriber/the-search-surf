@@ -17,9 +17,11 @@ dist/
 .turbo/
 
 # Test and analysis output
+.cache/
 test-results/
 playwright-report/
 *.sarif
+*.spdx.json
 
 # IDE and operating system
 .DS_Store

@@ -1,0 +1,36 @@
+name: the-search
+
+services:
+  api:
+    image: the-search-api:local
+    build:
+      context: ./backend
+      args:
+        VERSION: local
+        COMMIT: development
+    environment:
+      HTTP_ADDRESS: :8080
+    ports:
+      - "127.0.0.1:8080:8080"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+  pwa:
+    image: the-search-pwa:local
+    build:
+      context: ./frontend
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8081:8080"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
