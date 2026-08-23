@@ -29,7 +29,7 @@ The `CI` and `CodeQL` workflows run on pull requests. Their checks are designed 
 | Contract quality | repository hygiene, OpenAPI validation, Compose model validation |
 | Container quality | production build, health smoke test, SBOM generation, high-or-critical Trivy findings |
 | Dependency review | blocks newly introduced dependencies with high-or-critical known vulnerabilities |
-| CodeQL Analyze | semantic analysis of Go and JavaScript/TypeScript |
+| CodeQL Analyze (Go and JavaScript/TypeScript) | independent semantic analysis using each language's supported build mode |
 
 All third-party GitHub Actions are pinned to immutable commit revisions, workflow permissions are read-only by default, jobs have timeouts, and redundant runs are cancelled. Dependabot opens grouped updates for Go, npm, Actions, and both Docker build contexts.
 
