@@ -8,8 +8,10 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/jonriber/the-search-surf/backend/internal/platform/config"
+	"github.com/jonriber/the-search-surf/backend/internal/platform/healthcheck"
 	"github.com/jonriber/the-search-surf/backend/internal/platform/httpserver"
 )
 
@@ -25,6 +27,15 @@ func main() {
 	if err != nil {
 		logger.Error("invalid application configuration", "error", err)
 		os.Exit(1)
+	}
+	if len(os.Args) == 2 && os.Args[1] == "healthcheck" {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		if err := healthcheck.Check(ctx, cfg.HTTPAddress, http.DefaultClient); err != nil {
+			logger.Error("api healthcheck failed", "error", err)
+			os.Exit(1)
+		}
+		return
 	}
 
 	handler := httpserver.NewHandler(httpserver.HandlerOptions{

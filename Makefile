@@ -2,7 +2,7 @@ SHELL := /bin/sh
 
 .DEFAULT_GOAL := help
 
-.PHONY: help repository-check backend-format backend-format-check backend-vet backend-test backend-test-race backend-build backend-verify frontend-format frontend-format-check frontend-lint frontend-test frontend-build frontend-verify verify
+.PHONY: help repository-check backend-format backend-format-check backend-vet backend-test backend-test-race backend-build backend-verify frontend-format frontend-format-check frontend-lint frontend-test frontend-build frontend-verify container-build compose-up compose-down compose-smoke verify
 
 help: ## Show available repository commands
 	@awk 'BEGIN {FS = ":.*## "; printf "Available commands:\n"} /^[a-zA-Z_-]+:.*## / {printf "  %-20s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -48,5 +48,17 @@ frontend-build: ## Build the production PWA
 
 frontend-verify: ## Run every PWA quality check
 	$(MAKE) -C frontend verify
+
+container-build: ## Build the production API and PWA images
+	docker compose build
+
+compose-up: ## Start the local production-shaped stack
+	docker compose up --build --detach --wait
+
+compose-down: ## Stop the local production-shaped stack
+	docker compose down --remove-orphans
+
+compose-smoke: ## Build and smoke-test the local production-shaped stack
+	./scripts/compose-smoke.sh
 
 verify: repository-check backend-verify frontend-verify ## Run every quality check currently implemented
