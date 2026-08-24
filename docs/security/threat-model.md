@@ -29,7 +29,7 @@ This document covers the public source repository, build pipeline, PWA, backend,
 | --- | --- |
 | Malformed or adversarial provider response | Boundary validation, limits, timeouts, canonical normalization |
 | Prompt injection through external content | Structured AI inputs, no provider content with tool authority, deterministic decision engine |
-| Exposure of private spot coordinates | Private-by-default authorization, data minimization, log redaction |
+| Exposure of private spot coordinates | Server-resolved principal, application authorization, PostgreSQL RLS, data minimization, log redaction |
 | Compromised public pull request | GitHub-hosted runners, read-only tokens, no secrets, no homelab connectivity |
 | Mutable or substituted container image | Immutable digests, provenance, SBOM, registry and deployment verification |
 | CI-to-cluster credential theft | Pull-based GitOps; no cluster credentials in public CI |
@@ -37,6 +37,7 @@ This document covers the public source repository, build pipeline, PWA, backend,
 | Recommendation interpreted as safety guarantee | Separate safety warnings, confidence display, explicit disclaimer |
 | Provider outage or stale data | Timestamped data, freshness policy, graceful degradation |
 | Cross-user data access | Server-side authorization at every resource boundary and tenant-aware schema |
+| Pooled database connection retains another identity | Transaction-local principal setting, fail-closed RLS policies, cross-principal integration tests |
 
 ## Explicit non-guarantee
 

@@ -25,6 +25,8 @@ The browser uses only same-origin `/api` URLs. nginx owns routing at the deploym
 
 The API currently exposes `/health/live`, `/health/ready`, and `/version`. Its OpenAPI description under `api/openapi` is the transport contract. HTTP concerns live under `internal/platform`; surf-domain packages will be introduced only with the first domain behavior.
 
+The [initial domain and data model](domain-model.md) defines explicit principal ownership, private surf spots, favorites, and the separate forecast-ingestion seam. PostgreSQL row-level security is a database backstop; application use cases remain responsible for authorization intent and transaction scope.
+
 ## Target containers
 
 ```text
