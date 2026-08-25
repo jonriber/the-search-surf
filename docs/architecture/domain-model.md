@@ -4,7 +4,7 @@
 
 This model defines the first user-owned capability: a principal has one surfer profile, owns private surf spots, and chooses favorites. It establishes the seams needed by forecast ingestion without fixing a provider schema before issue #11 or a preference vocabulary before issue #15.
 
-The relational model is a contract for issue #18, not an executable migration. Migration-tool and driver selection remain implementation decisions within the constraints of [ADR 0004](../adr/0004-use-postgresql-and-postgis.md), [ADR 0013](../adr/0013-enforce-user-ownership-with-postgresql-row-level-security.md), and [ADR 0014](../adr/0014-use-forward-only-sql-migrations-and-use-case-transactions.md).
+The relational model is a contract for issue #18, not an executable migration. [ADR 0015](../adr/0015-use-pgx-goose-and-disposable-postgis-integration-tests.md) selects the migration, driver, database-image, and integration-test tooling within the constraints of [ADR 0004](../adr/0004-use-postgresql-and-postgis.md), [ADR 0013](../adr/0013-enforce-user-ownership-with-postgresql-row-level-security.md), and [ADR 0014](../adr/0014-use-forward-only-sql-migrations-and-use-case-transactions.md).
 
 ## Domain boundaries
 
