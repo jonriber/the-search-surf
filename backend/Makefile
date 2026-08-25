@@ -11,7 +11,7 @@ GOVULNCHECK_VERSION := v1.7.0
 export GOCACHE
 export GOMODCACHE
 
-.PHONY: format format-check vet lint vulnerability-check test test-race build verify clean
+.PHONY: format format-check vet lint vulnerability-check test test-integration test-race build verify clean
 
 format:
 	gofmt -w .
@@ -30,6 +30,9 @@ vulnerability-check:
 
 test:
 	go test $(PACKAGES)
+
+test-integration:
+	go test -race -tags=integration $(PACKAGES)
 
 test-race:
 	go test -race $(PACKAGES)
