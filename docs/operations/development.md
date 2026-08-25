@@ -28,6 +28,7 @@ The current local gates are:
 | --- | --- |
 | API contract | Redocly validation of the OpenAPI document |
 | Go API | formatting, `go vet`, pinned `golangci-lint`, `govulncheck`, unit tests, race tests, build |
+| PostgreSQL/PostGIS | forward migration, schema, role, spatial-index, and forced row-level-security integration tests |
 | PWA | Prettier, ESLint, Vitest coverage thresholds, TypeScript and production build |
 | Repository | whitespace and patch hygiene |
 
@@ -36,6 +37,7 @@ The current local gates are:
 ```sh
 npm audit --prefix frontend --audit-level=high
 make verify
+make database-test
 make compose-smoke
 ```
 
@@ -53,7 +55,9 @@ The API accepts these optional environment variables and rejects invalid explici
 | `HTTP_IDLE_TIMEOUT` | `60s` | keep-alive idle timeout |
 | `HTTP_SHUTDOWN_TIMEOUT` | `10s` | graceful shutdown budget |
 
-The Compose stack binds host ports only to loopback: API on `127.0.0.1:8080` and PWA on `127.0.0.1:8081`. The PWA proxies `/api/*` to the API service. This is a local verification topology, not the future public ingress design.
+The Compose stack binds host ports only to loopback: PostgreSQL on `127.0.0.1:5432`, API on `127.0.0.1:8080`, and PWA on `127.0.0.1:8081`. The PWA proxies `/api/*` to the API service. This is a local verification topology, not the future public ingress design.
+
+Unit tests live beside the Go package they exercise. Real database contracts use the external `migrations_test` package and the `integration` build tag; `make database-test` owns the disposable database and required DSNs. Integration tests fail rather than skip when their environment is incomplete. See [database operations](database.md) for the full TDD, migration, and recovery contract.
 
 ## Branch and pull-request workflow
 

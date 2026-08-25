@@ -19,13 +19,17 @@ Browser / installed PWA ──► unprivileged nginx ──/api/*──► Go AP
           └── cached app shell      └── security headers        ├── liveness
                                                               ├── readiness
                                                               └── release identity
+
+PostGIS ──healthy──► forward-only migrator ──completed──► Go API startup
+   │                         │
+   └── forced RLS            └── dedicated non-superuser role
 ```
 
 The browser uses only same-origin `/api` URLs. nginx owns routing at the deployment edge, so the PWA does not embed a homelab address and the API does not need permissive cross-origin rules. The client caches the application shell and the last successfully validated release identity; it does not cache arbitrary API responses.
 
-The API currently exposes `/health/live`, `/health/ready`, and `/version`. Its OpenAPI description under `api/openapi` is the transport contract. HTTP concerns live under `internal/platform`; surf-domain packages will be introduced only with the first domain behavior.
+The API currently exposes `/health/live`, `/health/ready`, and `/version`. Its OpenAPI description under `api/openapi` is the transport contract. HTTP concerns live under `internal/platform`; surf-domain packages will be introduced only with the first domain behavior. The API does not connect to PostgreSQL yet; Compose proves database bootstrap and migration ordering before that adapter is introduced.
 
-The [initial domain and data model](domain-model.md) defines explicit principal ownership, private surf spots, favorites, and the separate forecast-ingestion seam. PostgreSQL row-level security is a database backstop; application use cases remain responsible for authorization intent and transaction scope.
+The [initial domain and data model](domain-model.md) defines explicit principal ownership, private surf spots, favorites, and the separate forecast-ingestion seam. Its first PostGIS migration implements these user-owned tables, spatial indexing, least-privilege runtime grants, and forced row-level security. Database enforcement is a backstop; application use cases remain responsible for authorization intent and transaction scope.
 
 ## Target containers
 

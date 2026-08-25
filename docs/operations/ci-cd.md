@@ -26,12 +26,13 @@ The `CI` and `CodeQL` workflows run on pull requests. Their checks are designed 
 | --- | --- |
 | Backend quality | format, vet, strict lint, known reachable vulnerabilities, unit and race tests, build |
 | Frontend quality | format, lint, coverage, type/build validation, high-or-critical npm advisories |
+| Database quality | clean PostGIS startup, forward migration, least-privilege roles, spatial schema, constraints, and forced row-level-security isolation under the race detector |
 | Contract quality | repository hygiene, OpenAPI validation, Compose model validation |
-| Container quality | production build, health smoke test, SBOM generation, high-or-critical Trivy findings |
+| Container quality | production build, migration ordering, health smoke test, API/PWA/migrator SBOM generation, and high-or-critical Trivy findings across application and PostGIS images |
 | Dependency review | blocks newly introduced dependencies with high-or-critical known vulnerabilities |
 | CodeQL Analyze (Go and JavaScript/TypeScript) | independent semantic analysis using each language's supported build mode |
 
-All third-party GitHub Actions are pinned to immutable commit revisions, workflow permissions are read-only by default, jobs have timeouts, and redundant runs are cancelled. Dependabot opens grouped updates for Go, npm, Actions, and both Docker build contexts.
+All third-party GitHub Actions are pinned to immutable commit revisions, workflow permissions are read-only by default, jobs have timeouts, and redundant runs are cancelled. Dependabot opens grouped updates for Go, npm, Actions, both Docker build contexts, and the Compose database image.
 
 The scanners answer different questions. `govulncheck` correlates Go advisories with reachable call paths; npm audit evaluates the JavaScript dependency graph; dependency review evaluates the change introduced by a pull request; Trivy evaluates the built runtime images; CodeQL looks for source-level vulnerability patterns. No single scanner substitutes for the others.
 
