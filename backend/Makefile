@@ -1,6 +1,7 @@
 SHELL := /bin/sh
 
-BINARY := bin/api
+API_BINARY := bin/api
+MIGRATION_BINARY := bin/migrate
 PACKAGES := ./...
 GOCACHE ?= $(abspath ../.cache/go-build)
 GOMODCACHE ?= $(abspath ../.cache/go-mod)
@@ -34,9 +35,10 @@ test-race:
 	go test -race $(PACKAGES)
 
 build:
-	go build -trimpath -o $(BINARY) ./cmd/api
+	go build -trimpath -o $(API_BINARY) ./cmd/api
+	go build -trimpath -o $(MIGRATION_BINARY) ./cmd/migrate
 
 verify: format-check vet lint vulnerability-check test test-race build
 
 clean:
-	rm -f $(BINARY)
+	rm -f $(API_BINARY) $(MIGRATION_BINARY)
