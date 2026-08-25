@@ -63,3 +63,12 @@ updates:
       time: "07:00"
       timezone: Europe/Lisbon
     open-pull-requests-limit: 3
+
+  - package-ecosystem: docker
+    directory: /database
+    schedule:
+      interval: weekly
+      day: monday
+      time: "07:15"
+      timezone: Europe/Lisbon
+    open-pull-requests-limit: 3

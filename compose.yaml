@@ -1,15 +1,72 @@
 name: the-search
 
 services:
+  database:
+    image: the-search-database:local
+    build:
+      context: ./database
+    platform: linux/amd64
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${THE_SEARCH_DATABASE_ADMIN_PASSWORD:-local-admin-only}
+      POSTGRES_DB: the_search
+      THE_SEARCH_MIGRATOR_PASSWORD: ${THE_SEARCH_DATABASE_MIGRATOR_PASSWORD:-local-migrator-only}
+      THE_SEARCH_APPLICATION_PASSWORD: ${THE_SEARCH_DATABASE_APPLICATION_PASSWORD:-local-app-only}
+    ports:
+      - "127.0.0.1:${THE_SEARCH_DATABASE_PORT:-5432}:5432"
+    volumes:
+      - database-data:/var/lib/postgresql
+      - ./database/init/20-the-search-roles.sh:/docker-entrypoint-initdb.d/20-the-search-roles.sh:ro
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+      - /var/run/postgresql:rw,noexec,nosuid,uid=70,gid=70,mode=3775,size=16m
+    read_only: true
+    shm_size: 128mb
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready --username=$${POSTGRES_USER} --dbname=$${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+    stop_grace_period: 30s
+
+  migrate:
+    image: the-search-migrate:local
+    build:
+      context: ./backend
+      target: migration
+    command:
+      - up
+    environment:
+      MIGRATION_DATABASE_URL: postgres://the_search_migrator:${THE_SEARCH_DATABASE_MIGRATOR_PASSWORD:-local-migrator-only}@database:5432/the_search?sslmode=disable
+      MIGRATION_TIMEOUT: 2m
+    depends_on:
+      database:
+        condition: service_healthy
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    restart: "no"
+
   api:
     image: the-search-api:local
     build:
       context: ./backend
+      target: api
       args:
         VERSION: local
         COMMIT: development
     environment:
       HTTP_ADDRESS: :8080
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
     ports:
       - "127.0.0.1:8080:8080"
     read_only: true
@@ -34,3 +91,6 @@ services:
       - ALL
     security_opt:
       - no-new-privileges:true
+
+volumes:
+  database-data:

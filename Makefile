@@ -2,7 +2,7 @@ SHELL := /bin/sh
 
 .DEFAULT_GOAL := help
 
-.PHONY: help repository-check api-lint backend-format backend-format-check backend-vet backend-lint backend-vulnerability-check backend-test backend-test-race backend-build backend-verify frontend-format frontend-format-check frontend-lint frontend-test frontend-build frontend-verify container-build compose-up compose-down compose-smoke verify
+.PHONY: help repository-check api-lint backend-format backend-format-check backend-vet backend-lint backend-vulnerability-check backend-test backend-test-integration backend-test-race backend-build backend-verify frontend-format frontend-format-check frontend-lint frontend-test frontend-build frontend-verify database-test database-migrate database-status container-build compose-up compose-down compose-smoke verify
 
 help: ## Show available repository commands
 	@awk 'BEGIN {FS = ":.*## "; printf "Available commands:\n"} /^[a-zA-Z_-]+:.*## / {printf "  %-20s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -31,6 +31,9 @@ backend-vulnerability-check: ## Check Go dependencies and call paths for known v
 backend-test: ## Run Go backend tests
 	$(MAKE) -C backend test
 
+backend-test-integration: ## Run Docker-backed Go integration tests with configured test DSNs
+	$(MAKE) -C backend test-integration
+
 backend-test-race: ## Run Go backend tests with race detection
 	$(MAKE) -C backend test-race
 
@@ -57,6 +60,15 @@ frontend-build: ## Build the production PWA
 
 frontend-verify: ## Run every PWA quality check
 	$(MAKE) -C frontend verify
+
+database-test: ## Run migrations and database contracts against a disposable PostGIS instance
+	./scripts/database-integration.sh
+
+database-migrate: ## Apply pending migrations to the local Compose database
+	docker compose run --rm migrate up
+
+database-status: ## Report migration status for the local Compose database
+	docker compose run --rm migrate status
 
 container-build: ## Build the production API and PWA images
 	docker compose build

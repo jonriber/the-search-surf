@@ -4,7 +4,7 @@ The Search is an open-source, self-hostable surf intelligence PWA that combines 
 
 ## Status
 
-The project is in its foundation phase. A production-shaped vertical slice now proves the installable PWA, same-origin API boundary, health and release contracts, hardened containers, and pull-request quality gates. Surf-domain features are the next milestone.
+The project is in its foundation phase. A production-shaped vertical slice now proves the installable PWA, same-origin API boundary, health and release contracts, hardened containers, forward-only PostGIS migrations, user-data isolation, and pull-request quality gates. Surf-domain features are the next milestone.
 
 ## Product objective
 
@@ -48,6 +48,7 @@ The decisions and their trade-offs are recorded in [`docs/adr`](docs/adr/README.
 ```text
 api/openapi/     Versioned HTTP contract
 backend/         Go API and production container
+database/        PostgreSQL role bootstrap and database initialization
 frontend/        React and TypeScript PWA and production container
 docs/
   adr/           Architectural decision records
@@ -66,6 +67,7 @@ Install the pinned Go and Node.js versions, then run the local quality contract:
 ```sh
 npm ci --prefix frontend
 make verify
+make database-test
 ```
 
 To exercise the production containers and the PWA-to-API proxy:
@@ -74,7 +76,7 @@ To exercise the production containers and the PWA-to-API proxy:
 make compose-smoke
 ```
 
-For an interactive local stack, run `make compose-up` and open <http://127.0.0.1:8081>. Stop it with `make compose-down`.
+For an interactive local stack, run `make compose-up` and open <http://127.0.0.1:8081>. The stack waits for PostgreSQL and applies pending migrations before starting the API. Stop it with `make compose-down`. See [database operations](docs/operations/database.md) before resetting data or changing migrations.
 
 ## Contributing
 
