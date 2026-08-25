@@ -2,7 +2,7 @@
 
 ## Runtime and ownership model
 
-The local database is PostgreSQL 18 with PostGIS 3.6. The Compose image is pinned by digest and runs as `linux/amd64`; Apple Silicon development therefore uses Docker's amd64 emulation. This gives every environment the same tested image at the cost of slower startup and migration tests on arm64 workstations.
+The local database is PostgreSQL 18 with PostGIS 3.6. A minimal project image derives from the digest-pinned official Alpine variant, removes its unused privilege-transition helper, and runs directly as the existing PostgreSQL UID/GID 70 with all Linux capabilities dropped. It runs as `linux/amd64`; Apple Silicon development therefore uses Docker's amd64 emulation. This gives every environment the same tested image at the cost of slower startup and migration tests on arm64 workstations.
 
 Three database roles keep privileges separated:
 

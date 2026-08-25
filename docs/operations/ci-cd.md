@@ -28,7 +28,7 @@ The `CI` and `CodeQL` workflows run on pull requests. Their checks are designed 
 | Frontend quality | format, lint, coverage, type/build validation, high-or-critical npm advisories |
 | Database quality | clean PostGIS startup, forward migration, least-privilege roles, spatial schema, constraints, and forced row-level-security isolation under the race detector |
 | Contract quality | repository hygiene, OpenAPI validation, Compose model validation |
-| Container quality | production build, migration ordering, health smoke test, API/PWA/migrator SBOM generation, and high-or-critical Trivy findings across application and PostGIS images |
+| Container quality | production build, migration ordering, health smoke test, API/PWA/migrator/database SBOM generation, and high-or-critical Trivy findings across application and PostGIS images |
 | Dependency review | blocks newly introduced dependencies with high-or-critical known vulnerabilities |
 | CodeQL Analyze (Go and JavaScript/TypeScript) | independent semantic analysis using each language's supported build mode |
 

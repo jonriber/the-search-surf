@@ -132,6 +132,15 @@ jobs:
           upload-artifact: false
           upload-release-assets: false
 
+      - name: Generate database SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        with:
+          image: the-search-database:local
+          output-file: database.spdx.json
+          format: spdx-json
+          upload-artifact: false
+          upload-release-assets: false
+
       - name: Scan API image
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
@@ -165,7 +174,7 @@ jobs:
       - name: Scan PostGIS image
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
-          image-ref: postgis/postgis:18-3.6@sha256:8d67cc8fe5f45808d54fe95cc210b05ce6b3ea3682e9a97c36362f3e1b8ff939
+          image-ref: the-search-database:local
           format: table
           exit-code: "1"
           ignore-unfixed: true

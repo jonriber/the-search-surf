@@ -65,7 +65,7 @@ updates:
     open-pull-requests-limit: 3
 
   - package-ecosystem: docker
-    directory: /
+    directory: /database
     schedule:
       interval: weekly
       day: monday
