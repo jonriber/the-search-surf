@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { axe } from "jest-axe";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import type { UserDataClient } from "./api/userData";
 import { App } from "./App";
 
 describe("App", () => {
@@ -128,4 +129,53 @@ describe("App", () => {
 
     await waitFor(() => expect(screen.getByText("1.2.4")).toBeVisible());
   });
+
+  it("opens the profile and favorite workflows after verifying the API", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn<typeof fetch>()
+        .mockResolvedValueOnce(Response.json({ status: "ready" }))
+        .mockResolvedValueOnce(
+          Response.json({ version: "1.2.3", commit: "abc123" }),
+        ),
+    );
+    const client = createClient({
+      getProfile: vi.fn().mockResolvedValue({
+        experienceLevel: "intermediate",
+        displayUnits: "metric",
+        version: 1,
+        createdAt: "2026-08-27T10:00:00Z",
+        updatedAt: "2026-08-27T10:00:00Z",
+      }),
+      listSpots: vi.fn().mockResolvedValue([]),
+      listFavorites: vi.fn().mockResolvedValue([]),
+    });
+
+    render(<App client={client} />);
+
+    expect(
+      await screen.findByRole("heading", { name: "Your surf profile" }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("heading", { name: "Your favorite spots" }),
+    ).toBeVisible();
+  });
 });
+
+function createClient(overrides: Partial<UserDataClient> = {}): UserDataClient {
+  return {
+    getProfile: vi.fn(),
+    createProfile: vi.fn(),
+    updateProfile: vi.fn(),
+    listSpots: vi.fn(),
+    createSpot: vi.fn(),
+    updateSpot: vi.fn(),
+    deleteSpot: vi.fn(),
+    listFavorites: vi.fn(),
+    addFavorite: vi.fn(),
+    updateFavoritePosition: vi.fn(),
+    removeFavorite: vi.fn(),
+    ...overrides,
+  };
+}
