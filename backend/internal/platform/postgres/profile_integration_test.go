@@ -52,7 +52,7 @@ func TestProfilePersistenceAndTransactionContracts(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	service, err := userdata.NewService(transactions)
+	service, err := userdata.NewService(transactions, uuid.New)
 	if err != nil {
 		t.Fatal(err)
 	}

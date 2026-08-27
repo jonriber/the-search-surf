@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/jonriber/the-search-surf/backend/internal/identity"
 	"github.com/jonriber/the-search-surf/backend/internal/profile"
 )
@@ -38,9 +39,15 @@ func (stub *profileRepositoryStub) Update(_ context.Context, candidate profile.P
 	return stub.updateResult, stub.updateErr
 }
 
-type transactionStub struct{ profiles ProfileRepository }
+type transactionStub struct {
+	profiles  ProfileRepository
+	spots     SpotRepository
+	favorites FavoriteRepository
+}
 
-func (stub transactionStub) Profiles() ProfileRepository { return stub.profiles }
+func (stub transactionStub) Profiles() ProfileRepository   { return stub.profiles }
+func (stub transactionStub) Spots() SpotRepository         { return stub.spots }
+func (stub transactionStub) Favorites() FavoriteRepository { return stub.favorites }
 
 type transactorStub struct {
 	transaction Transaction
@@ -65,7 +72,7 @@ func TestProfileUseCasesUseTrustedPrincipalAndTransaction(t *testing.T) {
 	want := profile.Profile{OwnerID: principal, ExperienceLevel: profile.ExperienceIntermediate, DisplayUnits: profile.UnitsMetric, Version: 1}
 	repository := &profileRepositoryStub{createResult: want, getResult: want, updateResult: profile.Profile{OwnerID: principal, ExperienceLevel: profile.ExperienceAdvanced, DisplayUnits: profile.UnitsImperial, Version: 2}}
 	transactions := &transactorStub{transaction: transactionStub{profiles: repository}}
-	service, err := NewService(transactions)
+	service, err := NewService(transactions, uuid.New)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -99,7 +106,7 @@ func TestProfileValidationFailsBeforeTransaction(t *testing.T) {
 	t.Parallel()
 
 	transactions := &transactorStub{}
-	service, err := NewService(transactions)
+	service, err := NewService(transactions, uuid.New)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -126,7 +133,7 @@ func TestProfileUseCasesPropagateRepositoryAndTransactionErrors(t *testing.T) {
 	wantRepositoryError := errors.New("profile unavailable")
 	repository := &profileRepositoryStub{getErr: wantRepositoryError}
 	transactions := &transactorStub{transaction: transactionStub{profiles: repository}}
-	service, err := NewService(transactions)
+	service, err := NewService(transactions, uuid.New)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -144,8 +151,11 @@ func TestProfileUseCasesPropagateRepositoryAndTransactionErrors(t *testing.T) {
 func TestNewServiceRequiresTransactor(t *testing.T) {
 	t.Parallel()
 
-	if _, err := NewService(nil); err == nil {
+	if _, err := NewService(nil, uuid.New); err == nil {
 		t.Fatal("NewService(nil) error = nil")
+	}
+	if _, err := NewService(&transactorStub{}, nil); err == nil {
+		t.Fatal("NewService() without ID generator error = nil")
 	}
 }
 

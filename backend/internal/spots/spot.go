@@ -80,6 +80,24 @@ func NewSpot(id uuid.UUID, owner identity.PrincipalID, name string, longitude, l
 	}, nil
 }
 
+// RestoreSpot validates private spot state read from persistence.
+func RestoreSpot(id uuid.UUID, owner identity.PrincipalID, name string, longitude, latitude float64, timeZone string, version int64, createdAt, updatedAt time.Time) (Spot, error) {
+	restored, err := NewSpot(id, owner, name, longitude, latitude, timeZone)
+	if err != nil {
+		return Spot{}, err
+	}
+	if version <= 0 {
+		return Spot{}, errors.New("spot version must be positive")
+	}
+	if updatedAt.Before(createdAt) {
+		return Spot{}, errors.New("spot update time precedes creation time")
+	}
+	restored.Version = version
+	restored.CreatedAt = createdAt
+	restored.UpdatedAt = updatedAt
+	return restored, nil
+}
+
 // NewFavorite validates an owner-scoped favorite relationship.
 func NewFavorite(owner identity.PrincipalID, spotID uuid.UUID, sortPosition int) (Favorite, error) {
 	if owner.IsZero() {
@@ -92,4 +110,18 @@ func NewFavorite(owner identity.PrincipalID, spotID uuid.UUID, sortPosition int)
 		return Favorite{}, errors.New("favorite sort position must not be negative")
 	}
 	return Favorite{OwnerID: owner, SpotID: spotID, SortPosition: sortPosition}, nil
+}
+
+// RestoreFavorite validates favorite state read from persistence.
+func RestoreFavorite(owner identity.PrincipalID, spotID uuid.UUID, sortPosition int, createdAt, updatedAt time.Time) (Favorite, error) {
+	restored, err := NewFavorite(owner, spotID, sortPosition)
+	if err != nil {
+		return Favorite{}, err
+	}
+	if updatedAt.Before(createdAt) {
+		return Favorite{}, errors.New("favorite update time precedes creation time")
+	}
+	restored.CreatedAt = createdAt
+	restored.UpdatedAt = updatedAt
+	return restored, nil
 }

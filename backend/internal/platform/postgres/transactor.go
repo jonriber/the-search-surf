@@ -43,7 +43,11 @@ func (transactor *Transactor) WithinTransaction(ctx context.Context, principal i
 		return errors.Join(fmt.Errorf("scope user-data transaction: %w", err), rollback(ctx, tx))
 	}
 
-	transaction := stores{profiles: profileRepository{tx: tx}}
+	transaction := stores{
+		profiles:  profileRepository{tx: tx},
+		spots:     spotRepository{tx: tx},
+		favorites: favoriteRepository{tx: tx},
+	}
 	if err := operation(ctx, transaction); err != nil {
 		return errors.Join(err, rollback(ctx, tx))
 	}
@@ -54,11 +58,21 @@ func (transactor *Transactor) WithinTransaction(ctx context.Context, principal i
 }
 
 type stores struct {
-	profiles profileRepository
+	profiles  profileRepository
+	spots     spotRepository
+	favorites favoriteRepository
 }
 
 func (transaction stores) Profiles() userdata.ProfileRepository {
 	return transaction.profiles
+}
+
+func (transaction stores) Spots() userdata.SpotRepository {
+	return transaction.spots
+}
+
+func (transaction stores) Favorites() userdata.FavoriteRepository {
+	return transaction.favorites
 }
 
 func rollback(ctx context.Context, tx pgx.Tx) error {

@@ -2,6 +2,7 @@ package spots
 
 import (
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jonriber/the-search-surf/backend/internal/identity"
@@ -22,6 +23,34 @@ func TestNewSpotValidatesAndNormalizesInput(t *testing.T) {
 	}
 	if got.Name != "Supertubos" || got.Longitude != -9.3645 || got.Latitude != 39.3394 || got.TimeZone != "Europe/Lisbon" || got.Version != 1 {
 		t.Fatalf("NewSpot() = %+v", got)
+	}
+}
+
+func TestRestoreSpotAndFavoriteValidatePersistedState(t *testing.T) {
+	t.Parallel()
+
+	owner, err := identity.ParsePrincipalID("2f404f62-3d6f-4e5f-a2e8-1be44b08f05c")
+	if err != nil {
+		t.Fatal(err)
+	}
+	spotID := uuid.MustParse("4fda51a7-d38b-47b2-8c84-aaf455a73602")
+	createdAt := time.Date(2026, time.August, 27, 10, 0, 0, 0, time.UTC)
+	updatedAt := createdAt.Add(time.Hour)
+
+	spot, err := RestoreSpot(spotID, owner, "Supertubos", -9.3645, 39.3394, "Europe/Lisbon", 4, createdAt, updatedAt)
+	if err != nil || spot.Version != 4 || spot.UpdatedAt != updatedAt {
+		t.Fatalf("RestoreSpot() = (%+v, %v)", spot, err)
+	}
+	if _, err := RestoreSpot(spotID, owner, "Supertubos", -9.3645, 39.3394, "Europe/Lisbon", 0, createdAt, updatedAt); err == nil {
+		t.Fatal("RestoreSpot() with zero version error = nil")
+	}
+
+	favorite, err := RestoreFavorite(owner, spotID, 2, createdAt, updatedAt)
+	if err != nil || favorite.SortPosition != 2 || favorite.CreatedAt != createdAt {
+		t.Fatalf("RestoreFavorite() = (%+v, %v)", favorite, err)
+	}
+	if _, err := RestoreFavorite(owner, spotID, 2, updatedAt, createdAt); err == nil {
+		t.Fatal("RestoreFavorite() with reversed timestamps error = nil")
 	}
 }
 
