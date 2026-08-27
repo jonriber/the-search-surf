@@ -16,9 +16,10 @@ import (
 // Stable application errors are translated by transport adapters without
 // exposing persistence details.
 var (
-	ErrNotFound      = errors.New("user data not found")
-	ErrConflict      = errors.New("user data version conflict")
-	ErrAlreadyExists = errors.New("user data already exists")
+	ErrInvalidArgument = errors.New("invalid user data argument")
+	ErrNotFound        = errors.New("user data not found")
+	ErrConflict        = errors.New("user data version conflict")
+	ErrAlreadyExists   = errors.New("user data already exists")
 )
 
 // ProfileRepository is the capability-specific profile persistence port.
@@ -105,7 +106,7 @@ func NewService(transactions Transactor, newSpotID func() uuid.UUID) (*Service, 
 func (service *Service) CreateProfile(ctx context.Context, principal identity.PrincipalID, input ProfileInput) (profile.Profile, error) {
 	candidate, err := profile.New(principal, input.ExperienceLevel, input.DisplayUnits)
 	if err != nil {
-		return profile.Profile{}, fmt.Errorf("validate profile: %w", err)
+		return profile.Profile{}, fmt.Errorf("%w: validate profile: %w", ErrInvalidArgument, err)
 	}
 
 	var created profile.Profile
@@ -122,7 +123,7 @@ func (service *Service) CreateProfile(ctx context.Context, principal identity.Pr
 // GetProfile returns only the acting principal's profile.
 func (service *Service) GetProfile(ctx context.Context, principal identity.PrincipalID) (profile.Profile, error) {
 	if principal.IsZero() {
-		return profile.Profile{}, errors.New("trusted principal is required")
+		return profile.Profile{}, fmt.Errorf("%w: trusted principal is required", ErrInvalidArgument)
 	}
 
 	var found profile.Profile
@@ -140,11 +141,11 @@ func (service *Service) GetProfile(ctx context.Context, principal identity.Princ
 // UpdateProfile applies a compare-and-swap profile update.
 func (service *Service) UpdateProfile(ctx context.Context, principal identity.PrincipalID, input UpdateProfileInput) (profile.Profile, error) {
 	if input.ExpectedVersion <= 0 {
-		return profile.Profile{}, errors.New("expected profile version must be positive")
+		return profile.Profile{}, fmt.Errorf("%w: expected profile version must be positive", ErrInvalidArgument)
 	}
 	candidate, err := profile.New(principal, input.ExperienceLevel, input.DisplayUnits)
 	if err != nil {
-		return profile.Profile{}, fmt.Errorf("validate profile: %w", err)
+		return profile.Profile{}, fmt.Errorf("%w: validate profile: %w", ErrInvalidArgument, err)
 	}
 
 	var updated profile.Profile
@@ -162,7 +163,7 @@ func (service *Service) UpdateProfile(ctx context.Context, principal identity.Pr
 func (service *Service) CreateSpot(ctx context.Context, principal identity.PrincipalID, input SpotInput) (spots.Spot, error) {
 	candidate, err := spots.NewSpot(service.newSpotID(), principal, input.Name, input.Longitude, input.Latitude, input.TimeZone)
 	if err != nil {
-		return spots.Spot{}, fmt.Errorf("validate spot: %w", err)
+		return spots.Spot{}, fmt.Errorf("%w: validate spot: %w", ErrInvalidArgument, err)
 	}
 	var created spots.Spot
 	err = service.transactions.WithinTransaction(ctx, principal, func(ctx context.Context, transaction Transaction) error {
@@ -195,7 +196,7 @@ func (service *Service) GetSpot(ctx context.Context, principal identity.Principa
 // ListSpots returns the acting owner's spots in repository-defined deterministic order.
 func (service *Service) ListSpots(ctx context.Context, principal identity.PrincipalID) ([]spots.Spot, error) {
 	if principal.IsZero() {
-		return nil, errors.New("trusted principal is required")
+		return nil, fmt.Errorf("%w: trusted principal is required", ErrInvalidArgument)
 	}
 	var found []spots.Spot
 	err := service.transactions.WithinTransaction(ctx, principal, func(ctx context.Context, transaction Transaction) error {
@@ -212,11 +213,11 @@ func (service *Service) ListSpots(ctx context.Context, principal identity.Princi
 // UpdateSpot applies an ownership-scoped compare-and-swap update.
 func (service *Service) UpdateSpot(ctx context.Context, principal identity.PrincipalID, spotID uuid.UUID, input UpdateSpotInput) (spots.Spot, error) {
 	if input.ExpectedVersion <= 0 {
-		return spots.Spot{}, errors.New("expected spot version must be positive")
+		return spots.Spot{}, fmt.Errorf("%w: expected spot version must be positive", ErrInvalidArgument)
 	}
 	candidate, err := spots.NewSpot(spotID, principal, input.Name, input.Longitude, input.Latitude, input.TimeZone)
 	if err != nil {
-		return spots.Spot{}, fmt.Errorf("validate spot: %w", err)
+		return spots.Spot{}, fmt.Errorf("%w: validate spot: %w", ErrInvalidArgument, err)
 	}
 	var updated spots.Spot
 	err = service.transactions.WithinTransaction(ctx, principal, func(ctx context.Context, transaction Transaction) error {
@@ -235,7 +236,7 @@ func (service *Service) DeleteSpot(ctx context.Context, principal identity.Princ
 		return err
 	}
 	if expectedVersion <= 0 {
-		return errors.New("expected spot version must be positive")
+		return fmt.Errorf("%w: expected spot version must be positive", ErrInvalidArgument)
 	}
 	if err := service.transactions.WithinTransaction(ctx, principal, func(ctx context.Context, transaction Transaction) error {
 		return transaction.Spots().Delete(ctx, principal, spotID, expectedVersion)
@@ -249,7 +250,7 @@ func (service *Service) DeleteSpot(ctx context.Context, principal identity.Princ
 func (service *Service) AddFavorite(ctx context.Context, principal identity.PrincipalID, spotID uuid.UUID, sortPosition int) (spots.Favorite, error) {
 	candidate, err := spots.NewFavorite(principal, spotID, sortPosition)
 	if err != nil {
-		return spots.Favorite{}, fmt.Errorf("validate favorite: %w", err)
+		return spots.Favorite{}, fmt.Errorf("%w: validate favorite: %w", ErrInvalidArgument, err)
 	}
 	var added spots.Favorite
 	err = service.transactions.WithinTransaction(ctx, principal, func(ctx context.Context, transaction Transaction) error {
@@ -265,7 +266,7 @@ func (service *Service) AddFavorite(ctx context.Context, principal identity.Prin
 // ListFavorites returns deterministic favorite ordering for the acting owner.
 func (service *Service) ListFavorites(ctx context.Context, principal identity.PrincipalID) ([]spots.Favorite, error) {
 	if principal.IsZero() {
-		return nil, errors.New("trusted principal is required")
+		return nil, fmt.Errorf("%w: trusted principal is required", ErrInvalidArgument)
 	}
 	var found []spots.Favorite
 	err := service.transactions.WithinTransaction(ctx, principal, func(ctx context.Context, transaction Transaction) error {
@@ -282,7 +283,7 @@ func (service *Service) ListFavorites(ctx context.Context, principal identity.Pr
 // UpdateFavoritePosition updates deterministic ordering input.
 func (service *Service) UpdateFavoritePosition(ctx context.Context, principal identity.PrincipalID, spotID uuid.UUID, sortPosition int) (spots.Favorite, error) {
 	if _, err := spots.NewFavorite(principal, spotID, sortPosition); err != nil {
-		return spots.Favorite{}, fmt.Errorf("validate favorite: %w", err)
+		return spots.Favorite{}, fmt.Errorf("%w: validate favorite: %w", ErrInvalidArgument, err)
 	}
 	var updated spots.Favorite
 	err := service.transactions.WithinTransaction(ctx, principal, func(ctx context.Context, transaction Transaction) error {
@@ -311,10 +312,10 @@ func (service *Service) RemoveFavorite(ctx context.Context, principal identity.P
 
 func validatePrincipalAndSpotID(principal identity.PrincipalID, spotID uuid.UUID) error {
 	if principal.IsZero() {
-		return errors.New("trusted principal is required")
+		return fmt.Errorf("%w: trusted principal is required", ErrInvalidArgument)
 	}
 	if spotID == uuid.Nil {
-		return errors.New("spot ID is required")
+		return fmt.Errorf("%w: spot ID is required", ErrInvalidArgument)
 	}
 	return nil
 }

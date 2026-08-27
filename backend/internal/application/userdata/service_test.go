@@ -112,14 +112,14 @@ func TestProfileValidationFailsBeforeTransaction(t *testing.T) {
 	}
 	principal := mustPrincipalID(t)
 
-	if _, err := service.CreateProfile(context.Background(), principal, ProfileInput{ExperienceLevel: "legend", DisplayUnits: "metric"}); err == nil {
-		t.Fatal("CreateProfile() error = nil")
+	if _, err := service.CreateProfile(context.Background(), principal, ProfileInput{ExperienceLevel: "legend", DisplayUnits: "metric"}); !errors.Is(err, ErrInvalidArgument) {
+		t.Fatalf("CreateProfile() error = %v, want invalid argument", err)
 	}
-	if _, err := service.UpdateProfile(context.Background(), principal, UpdateProfileInput{ExperienceLevel: "advanced", DisplayUnits: "metric", ExpectedVersion: 0}); err == nil {
-		t.Fatal("UpdateProfile() error = nil")
+	if _, err := service.UpdateProfile(context.Background(), principal, UpdateProfileInput{ExperienceLevel: "advanced", DisplayUnits: "metric", ExpectedVersion: 0}); !errors.Is(err, ErrInvalidArgument) {
+		t.Fatalf("UpdateProfile() error = %v, want invalid argument", err)
 	}
-	if _, err := service.GetProfile(context.Background(), identity.PrincipalID{}); err == nil {
-		t.Fatal("GetProfile() without principal error = nil")
+	if _, err := service.GetProfile(context.Background(), identity.PrincipalID{}); !errors.Is(err, ErrInvalidArgument) {
+		t.Fatalf("GetProfile() error = %v, want invalid argument", err)
 	}
 	if transactions.calls != 0 {
 		t.Fatalf("transaction calls = %d, want 0", transactions.calls)

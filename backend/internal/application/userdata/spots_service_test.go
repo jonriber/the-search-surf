@@ -189,8 +189,8 @@ func TestSpotAndFavoriteValidationFailsBeforeTransaction(t *testing.T) {
 		func() error { return service.RemoveFavorite(context.Background(), principal, uuid.Nil) },
 	}
 	for index, operation := range operations {
-		if err := operation(); err == nil {
-			t.Fatalf("operation %d error = nil", index)
+		if err := operation(); !errors.Is(err, ErrInvalidArgument) {
+			t.Fatalf("operation %d error = %v, want invalid argument", index, err)
 		}
 	}
 	if transactions.calls != 0 {

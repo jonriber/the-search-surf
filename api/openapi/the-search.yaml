@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: The Search API
   version: 0.1.0
-  description: HTTP contract for The Search backend.
+  description: Ownership-safe HTTP contract for The Search backend.
   license:
     name: Apache-2.0
     identifier: Apache-2.0
@@ -25,12 +25,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthResponse"
-              examples:
-                live:
-                  value:
-                    status: ok
         "405":
-          description: Method not allowed
+          $ref: "#/components/responses/MethodNotAllowed"
   /health/ready:
     get:
       operationId: getReadiness
@@ -49,7 +45,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/HealthResponse"
         "405":
-          description: Method not allowed
+          $ref: "#/components/responses/MethodNotAllowed"
   /version:
     get:
       operationId: getVersion
@@ -62,7 +58,248 @@ paths:
               schema:
                 $ref: "#/components/schemas/VersionResponse"
         "405":
-          description: Method not allowed
+          $ref: "#/components/responses/MethodNotAllowed"
+  /profile:
+    post:
+      operationId: createProfile
+      summary: Create the acting surfer's profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileWrite"
+      responses:
+        "201":
+          description: Profile created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+    get:
+      operationId: getProfile
+      summary: Get the acting surfer's profile
+      responses:
+        "200":
+          description: Acting surfer profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      operationId: updateProfile
+      summary: Update the acting surfer's profile using optimistic concurrency
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileUpdate"
+      responses:
+        "200":
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+  /spots:
+    post:
+      operationId: createSpot
+      summary: Create a private surf spot for the acting surfer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SpotWrite"
+      responses:
+        "201":
+          description: Private surf spot created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Spot"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+    get:
+      operationId: listSpots
+      summary: List the acting surfer's private spots
+      responses:
+        "200":
+          description: Private spots ordered by name and identifier
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SpotList"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+  /spots/{spotId}:
+    parameters:
+      - $ref: "#/components/parameters/SpotID"
+    get:
+      operationId: getSpot
+      summary: Get one private spot owned by the acting surfer
+      responses:
+        "200":
+          description: Private surf spot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Spot"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      operationId: updateSpot
+      summary: Update one private spot using optimistic concurrency
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SpotUpdate"
+      responses:
+        "200":
+          description: Private surf spot updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Spot"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+    delete:
+      operationId: deleteSpot
+      summary: Delete one private spot at its expected version
+      parameters:
+        - $ref: "#/components/parameters/ExpectedVersion"
+      responses:
+        "204":
+          description: Private spot and its favorite relationship deleted
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /favorites:
+    post:
+      operationId: addFavorite
+      summary: Add an owned private spot to the acting surfer's favorites
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FavoriteWrite"
+      responses:
+        "201":
+          description: Favorite relationship created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Favorite"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+    get:
+      operationId: listFavorites
+      summary: List the acting surfer's favorite relationships
+      responses:
+        "200":
+          description: Favorites ordered by sort position and spot identifier
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FavoriteList"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+  /favorites/{spotId}:
+    parameters:
+      - $ref: "#/components/parameters/SpotID"
+    put:
+      operationId: updateFavoritePosition
+      summary: Change a favorite's sort position
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FavoritePosition"
+      responses:
+        "200":
+          description: Favorite relationship updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Favorite"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+    delete:
+      operationId: removeFavorite
+      summary: Remove a favorite relationship without deleting the private spot
+      responses:
+        "204":
+          description: Favorite relationship removed
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
 components:
   headers:
     RequestID:
@@ -71,27 +308,270 @@ components:
         type: string
         minLength: 1
         maxLength: 128
+  parameters:
+    SpotID:
+      name: spotId
+      in: path
+      required: true
+      description: Private surf spot identifier
+      schema:
+        type: string
+        format: uuid
+    ExpectedVersion:
+      name: expectedVersion
+      in: query
+      required: true
+      description: Last version observed by the caller
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+  responses:
+    InvalidRequest:
+      description: The request syntax or values are invalid
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthenticated:
+      description: A trusted acting principal could not be resolved
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: The resource does not exist in the acting principal's scope
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Conflict:
+      description: The resource already exists or its expected version is stale
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    UnsupportedMediaType:
+      description: Content-Type is not application/json
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    MethodNotAllowed:
+      description: Method not allowed
   schemas:
     HealthResponse:
       type: object
       additionalProperties: false
-      required:
-        - status
+      required: [status]
       properties:
         status:
           type: string
-          enum:
-            - ok
-            - ready
-            - unavailable
+          enum: [ok, ready, unavailable]
     VersionResponse:
       type: object
       additionalProperties: false
-      required:
-        - version
-        - commit
+      required: [version, commit]
       properties:
         version:
           type: string
         commit:
+          type: string
+    ProfileWrite:
+      type: object
+      additionalProperties: false
+      required: [experienceLevel, displayUnits]
+      properties:
+        experienceLevel:
+          type: string
+          enum: [beginner, intermediate, advanced, expert]
+        displayUnits:
+          type: string
+          enum: [metric, imperial]
+    ProfileUpdate:
+      type: object
+      additionalProperties: false
+      required: [experienceLevel, displayUnits, expectedVersion]
+      properties:
+        experienceLevel:
+          type: string
+          enum: [beginner, intermediate, advanced, expert]
+        displayUnits:
+          type: string
+          enum: [metric, imperial]
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 1
+    Profile:
+      type: object
+      additionalProperties: false
+      required: [experienceLevel, displayUnits, version, createdAt, updatedAt]
+      properties:
+        experienceLevel:
+          type: string
+          enum: [beginner, intermediate, advanced, expert]
+        displayUnits:
+          type: string
+          enum: [metric, imperial]
+        version:
+          type: integer
+          format: int64
+          minimum: 1
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    SpotWrite:
+      type: object
+      additionalProperties: false
+      required: [name, longitude, latitude, timeZone]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        longitude:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+        latitude:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+        timeZone:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: IANA time zone identifier
+    SpotUpdate:
+      type: object
+      additionalProperties: false
+      required: [name, longitude, latitude, timeZone, expectedVersion]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        longitude:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+        latitude:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+        timeZone:
+          type: string
+          minLength: 1
+          maxLength: 255
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 1
+    Spot:
+      type: object
+      additionalProperties: false
+      required: [id, name, longitude, latitude, timeZone, version, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        longitude:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+        latitude:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+        timeZone:
+          type: string
+        version:
+          type: integer
+          format: int64
+          minimum: 1
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    SpotList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Spot"
+    FavoriteWrite:
+      type: object
+      additionalProperties: false
+      required: [spotId, sortPosition]
+      properties:
+        spotId:
+          type: string
+          format: uuid
+        sortPosition:
+          type: integer
+          format: int32
+          minimum: 0
+    FavoritePosition:
+      type: object
+      additionalProperties: false
+      required: [sortPosition]
+      properties:
+        sortPosition:
+          type: integer
+          format: int32
+          minimum: 0
+    Favorite:
+      type: object
+      additionalProperties: false
+      required: [spotId, sortPosition, createdAt, updatedAt]
+      properties:
+        spotId:
+          type: string
+          format: uuid
+        sortPosition:
+          type: integer
+          format: int32
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    FavoriteList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Favorite"
+    Error:
+      type: object
+      additionalProperties: false
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
           type: string
