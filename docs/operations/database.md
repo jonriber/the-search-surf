@@ -51,7 +51,7 @@ Migrations are embedded into the dedicated Go migration binary and use the `the_
 
 There is no `down` command. Once shared, a migration is immutable; correcting it requires a new forward migration. This avoids pretending that destructive schema changes have a universally safe inverse. Restore from a verified backup when a forward fix cannot preserve data or availability.
 
-Each application request that touches user-owned data must begin a transaction, set `app.principal_id` with transaction-local scope, execute the use case, and commit or roll back. Forced row-level security fails closed when that context is missing. The API database adapter and bootstrap-principal provisioning are intentionally deferred to the next implementation slice.
+Each application request that touches user-owned data begins a transaction, sets `app.principal_id` with transaction-local scope, executes the use case, and commits or rolls back. Forced row-level security fails closed when that context is missing. The API uses only `the_search_app`; the short-lived bootstrap command uses the migrator role to idempotently provision the configured principal before API startup.
 
 ## Tests and TDD contract
 

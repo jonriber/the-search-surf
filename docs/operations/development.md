@@ -45,10 +45,13 @@ The first linter or vulnerability run downloads pinned tooling into the reposito
 
 ## Runtime configuration
 
-The API accepts these optional environment variables and rejects invalid explicit values at startup:
+The API requires database and bootstrap identity configuration and accepts optional timeout settings. It rejects missing or invalid values at startup:
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
+| `DATABASE_URL` | required | least-privilege `the_search_app` connection string |
+| `BOOTSTRAP_PRINCIPAL_ID` | required | stable trusted principal for single-user mode; not a credential |
+| `DATABASE_CONNECT_TIMEOUT` | `5s` | initial database connection budget |
 | `HTTP_ADDRESS` | `:8080` | API listen address |
 | `HTTP_READ_TIMEOUT` | `5s` | request read timeout |
 | `HTTP_WRITE_TIMEOUT` | `10s` | response write timeout |

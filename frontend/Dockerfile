@@ -15,6 +15,12 @@ RUN npm run build
 
 FROM ${NGINX_IMAGE}
 
+# The pinned base still ships OpenSSL packages affected by CVE-2026-14456.
+USER root
+RUN apk add --no-cache --upgrade \
+    libcrypto3=3.5.8-r0 \
+    libssl3=3.5.8-r0
+
 LABEL org.opencontainers.image.title="The Search PWA" \
       org.opencontainers.image.description="Installable client for explainable, personalized surf recommendations" \
       org.opencontainers.image.source="https://github.com/jonriber/the-search-surf" \

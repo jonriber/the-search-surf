@@ -19,7 +19,9 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} \
     go build -trimpath -ldflags="-s -w -X main.version=${VERSION} -X main.commit=${COMMIT}" -o /out/api ./cmd/api && \
     CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} \
-    go build -trimpath -ldflags="-s -w" -o /out/migrate ./cmd/migrate
+    go build -trimpath -ldflags="-s -w" -o /out/migrate ./cmd/migrate && \
+    CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} \
+    go build -trimpath -ldflags="-s -w" -o /out/bootstrap-principal ./cmd/bootstrap-principal
 
 FROM scratch AS api
 
@@ -54,3 +56,18 @@ ENV MIGRATION_TIMEOUT=2m
 
 ENTRYPOINT ["/migrate"]
 CMD ["up"]
+
+FROM scratch AS bootstrap
+
+LABEL org.opencontainers.image.title="The Search Bootstrap Principal" \
+      org.opencontainers.image.description="One-shot bootstrap identity provisioner for The Search" \
+      org.opencontainers.image.source="https://github.com/jonriber/the-search-surf" \
+      org.opencontainers.image.licenses="Apache-2.0"
+
+COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=build --chown=65532:65532 /out/bootstrap-principal /bootstrap-principal
+
+USER 65532:65532
+ENV BOOTSTRAP_TIMEOUT=30s
+
+ENTRYPOINT ["/bootstrap-principal"]

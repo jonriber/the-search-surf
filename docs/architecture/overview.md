@@ -22,12 +22,18 @@ Browser / installed PWA ──► unprivileged nginx ──/api/*──► Go AP
 
 PostGIS ──healthy──► forward-only migrator ──completed──► Go API startup
    │                         │
-   └── forced RLS            └── dedicated non-superuser role
+   └── forced RLS            └── one-shot principal bootstrap
+
+PWA ──same origin──► HTTP adapter ──trusted principal──► use cases
+                                               │
+                                               └── transaction-scoped pgx repositories
 ```
 
 The browser uses only same-origin `/api` URLs. nginx owns routing at the deployment edge, so the PWA does not embed a homelab address and the API does not need permissive cross-origin rules. The client caches the application shell and the last successfully validated release identity; it does not cache arbitrary API responses.
 
-The API currently exposes `/health/live`, `/health/ready`, and `/version`. Its OpenAPI description under `api/openapi` is the transport contract. HTTP concerns live under `internal/platform`; surf-domain packages will be introduced only with the first domain behavior. The API does not connect to PostgreSQL yet; Compose proves database bootstrap and migration ordering before that adapter is introduced.
+The API exposes health and release contracts plus ownership-scoped profile, private-spot, and favorite operations. Its OpenAPI description under `api/openapi` is the transport contract. HTTP translation lives under `internal/transport`; server lifecycle and middleware remain under `internal/platform`. Domain and application packages do not import either transport or PostgreSQL adapters.
+
+Bootstrap mode resolves every user-data request to one stable server-configured principal. Request bodies and responses intentionally omit owner identifiers. The API connects with the least-privilege application role, and every use case opens a transaction that sets the principal through transaction-local PostgreSQL state before accessing repositories. Explicit owner predicates express authorization intent; forced RLS is the database backstop.
 
 The [initial domain and data model](domain-model.md) defines explicit principal ownership, private surf spots, favorites, and the separate forecast-ingestion seam. Its first PostGIS migration implements these user-owned tables, spatial indexing, least-privilege runtime grants, and forced row-level security. Database enforcement is a backstop; application use cases remain responsible for authorization intent and transaction scope.
 

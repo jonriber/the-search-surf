@@ -141,6 +141,15 @@ jobs:
           upload-artifact: false
           upload-release-assets: false
 
+      - name: Generate bootstrap SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        with:
+          image: the-search-bootstrap:local
+          output-file: bootstrap.spdx.json
+          format: spdx-json
+          upload-artifact: false
+          upload-release-assets: false
+
       - name: Scan API image
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
@@ -165,6 +174,16 @@ jobs:
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: the-search-migrate:local
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: CRITICAL,HIGH
+
+      - name: Scan bootstrap image
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: the-search-bootstrap:local
           format: table
           exit-code: "1"
           ignore-unfixed: true

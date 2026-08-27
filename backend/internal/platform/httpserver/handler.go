@@ -21,9 +21,10 @@ type Version struct {
 
 // HandlerOptions declares the transport dependencies explicitly.
 type HandlerOptions struct {
-	Logger         *slog.Logger
-	Version        Version
-	ReadinessCheck ReadinessCheck
+	Logger             *slog.Logger
+	Version            Version
+	ReadinessCheck     ReadinessCheck
+	ApplicationHandler http.Handler
 }
 
 // NewHandler creates the complete API HTTP handler.
@@ -51,6 +52,9 @@ func NewHandler(options HandlerOptions) http.Handler {
 	mux.HandleFunc("GET /version", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(w, http.StatusOK, options.Version)
 	})
+	if options.ApplicationHandler != nil {
+		mux.Handle("/", options.ApplicationHandler)
+	}
 
 	return requestLogging(logger, requestID(securityHeaders(mux)))
 }

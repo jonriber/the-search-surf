@@ -4,7 +4,7 @@ The Search is an open-source, self-hostable surf intelligence PWA that combines 
 
 ## Status
 
-The project is in its foundation phase. A production-shaped vertical slice now proves the installable PWA, same-origin API boundary, health and release contracts, hardened containers, forward-only PostGIS migrations, user-data isolation, and pull-request quality gates. Surf-domain features are the next milestone.
+The project is in its foundation phase. A production-shaped vertical slice now proves the installable PWA, same-origin ownership-safe profile and favorite APIs, hardened containers, forward-only PostGIS migrations, user-data isolation, and pull-request quality gates. Forecast ingestion and recommendation behavior are the next milestones.
 
 ## Product objective
 

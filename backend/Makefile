@@ -2,6 +2,7 @@ SHELL := /bin/sh
 
 API_BINARY := bin/api
 MIGRATION_BINARY := bin/migrate
+BOOTSTRAP_BINARY := bin/bootstrap-principal
 PACKAGES := ./...
 GOCACHE ?= $(abspath ../.cache/go-build)
 GOMODCACHE ?= $(abspath ../.cache/go-mod)
@@ -32,7 +33,9 @@ test:
 	go test $(PACKAGES)
 
 test-integration:
-	go test -race -tags=integration $(PACKAGES)
+	go test -count=1 -race -tags=integration ./internal/platform/migrations
+	go test -count=1 -race -tags=integration ./internal/platform/bootstrapprincipal
+	go test -count=1 -race -tags=integration ./internal/platform/postgres
 
 test-race:
 	go test -race $(PACKAGES)
@@ -40,8 +43,9 @@ test-race:
 build:
 	go build -trimpath -o $(API_BINARY) ./cmd/api
 	go build -trimpath -o $(MIGRATION_BINARY) ./cmd/migrate
+	go build -trimpath -o $(BOOTSTRAP_BINARY) ./cmd/bootstrap-principal
 
 verify: format-check vet lint vulnerability-check test test-race build
 
 clean:
-	rm -f $(API_BINARY) $(MIGRATION_BINARY)
+	rm -f $(API_BINARY) $(MIGRATION_BINARY) $(BOOTSTRAP_BINARY)

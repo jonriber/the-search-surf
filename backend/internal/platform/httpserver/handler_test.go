@@ -105,3 +105,18 @@ func TestMethodNotAllowed(t *testing.T) {
 		t.Fatalf("status = %d, want %d", response.Code, http.StatusMethodNotAllowed)
 	}
 }
+
+func TestApplicationHandlerComposition(t *testing.T) {
+	t.Parallel()
+
+	application := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusTeapot)
+	})
+	handler := NewHandler(HandlerOptions{ApplicationHandler: application})
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/profile", nil))
+
+	if response.Code != http.StatusTeapot {
+		t.Fatalf("status = %d, want %d", response.Code, http.StatusTeapot)
+	}
+}

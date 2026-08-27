@@ -54,6 +54,25 @@ services:
       - no-new-privileges:true
     restart: "no"
 
+  bootstrap:
+    image: the-search-bootstrap:local
+    build:
+      context: ./backend
+      target: bootstrap
+    environment:
+      BOOTSTRAP_DATABASE_URL: postgres://the_search_migrator:${THE_SEARCH_DATABASE_MIGRATOR_PASSWORD:-local-migrator-only}@database:5432/the_search?sslmode=disable
+      BOOTSTRAP_PRINCIPAL_ID: ${THE_SEARCH_BOOTSTRAP_PRINCIPAL_ID:-2f404f62-3d6f-4e5f-a2e8-1be44b08f05c}
+      BOOTSTRAP_TIMEOUT: 30s
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    restart: "no"
+
   api:
     image: the-search-api:local
     build:
@@ -64,8 +83,10 @@ services:
         COMMIT: development
     environment:
       HTTP_ADDRESS: :8080
+      DATABASE_URL: postgres://the_search_app:${THE_SEARCH_DATABASE_APPLICATION_PASSWORD:-local-app-only}@database:5432/the_search?sslmode=disable
+      BOOTSTRAP_PRINCIPAL_ID: ${THE_SEARCH_BOOTSTRAP_PRINCIPAL_ID:-2f404f62-3d6f-4e5f-a2e8-1be44b08f05c}
     depends_on:
-      migrate:
+      bootstrap:
         condition: service_completed_successfully
     ports:
       - "127.0.0.1:8080:8080"
