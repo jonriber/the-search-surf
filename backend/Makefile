@@ -35,6 +35,7 @@ test:
 test-integration:
 	go test -count=1 -race -tags=integration ./internal/platform/migrations
 	go test -count=1 -race -tags=integration ./internal/platform/bootstrapprincipal
+	go test -count=1 -race -tags=integration ./internal/platform/postgres
 
 test-race:
 	go test -race $(PACKAGES)

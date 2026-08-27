@@ -61,6 +61,24 @@ func New(owner identity.PrincipalID, experience, units string) (Profile, error) 
 	}, nil
 }
 
+// Restore validates profile state read from persistence.
+func Restore(owner identity.PrincipalID, experience, units string, version int64, createdAt, updatedAt time.Time) (Profile, error) {
+	restored, err := New(owner, experience, units)
+	if err != nil {
+		return Profile{}, err
+	}
+	if version <= 0 {
+		return Profile{}, errors.New("profile version must be positive")
+	}
+	if updatedAt.Before(createdAt) {
+		return Profile{}, errors.New("profile update time precedes creation time")
+	}
+	restored.Version = version
+	restored.CreatedAt = createdAt
+	restored.UpdatedAt = updatedAt
+	return restored, nil
+}
+
 func parseExperienceLevel(value string) (ExperienceLevel, error) {
 	experience := ExperienceLevel(value)
 	switch experience {
