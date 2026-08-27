@@ -11,9 +11,14 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jonriber/the-search-surf/backend/internal/application/userdata"
 	"github.com/jonriber/the-search-surf/backend/internal/platform/config"
 	"github.com/jonriber/the-search-surf/backend/internal/platform/healthcheck"
 	"github.com/jonriber/the-search-surf/backend/internal/platform/httpserver"
+	"github.com/jonriber/the-search-surf/backend/internal/platform/postgres"
+	"github.com/jonriber/the-search-surf/backend/internal/transport/httpapi"
 )
 
 var (
@@ -39,8 +44,46 @@ func main() {
 		return
 	}
 
+	connectCtx, connectCancel := context.WithTimeout(context.Background(), cfg.DatabaseConnectTimeout)
+	pool, err := pgxpool.New(connectCtx, cfg.DatabaseURL)
+	if err != nil {
+		connectCancel()
+		logger.Error("create application database pool", "error", err)
+		os.Exit(1)
+	}
+	if err := pool.Ping(connectCtx); err != nil {
+		connectCancel()
+		pool.Close()
+		logger.Error("connect to application database", "error", err)
+		os.Exit(1)
+	}
+	connectCancel()
+	defer pool.Close()
+
+	transactions, err := postgres.NewTransactor(pool)
+	if err != nil {
+		logger.Error("create user-data transactor", "error", err)
+		os.Exit(1)
+	}
+	userDataService, err := userdata.NewService(transactions, uuid.New)
+	if err != nil {
+		logger.Error("create user-data service", "error", err)
+		os.Exit(1)
+	}
+	applicationHandler, err := httpapi.NewHandler(httpapi.Options{
+		Service:           userDataService,
+		PrincipalResolver: httpapi.FixedPrincipal(cfg.PrincipalID),
+		Logger:            logger,
+	})
+	if err != nil {
+		logger.Error("create application HTTP handler", "error", err)
+		os.Exit(1)
+	}
+
 	handler := httpserver.NewHandler(httpserver.HandlerOptions{
-		Logger: logger,
+		Logger:             logger,
+		ApplicationHandler: applicationHandler,
+		ReadinessCheck:     pool.Ping,
 		Version: httpserver.Version{
 			Release: version,
 			Commit:  commit,

@@ -83,6 +83,8 @@ services:
         COMMIT: development
     environment:
       HTTP_ADDRESS: :8080
+      DATABASE_URL: postgres://the_search_app:${THE_SEARCH_DATABASE_APPLICATION_PASSWORD:-local-app-only}@database:5432/the_search?sslmode=disable
+      BOOTSTRAP_PRINCIPAL_ID: ${THE_SEARCH_BOOTSTRAP_PRINCIPAL_ID:-2f404f62-3d6f-4e5f-a2e8-1be44b08f05c}
     depends_on:
       bootstrap:
         condition: service_completed_successfully
