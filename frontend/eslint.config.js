@@ -5,7 +5,7 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["coverage", "dist"] },
+  { ignores: ["coverage", "dist", "src/api/generated"] },
   {
     files: ["src/**/*.{ts,tsx}"],
     extends: [
@@ -33,7 +33,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ["vite.config.ts"],
+    files: ["vite.config.ts", "playwright.config.ts", "tests/**/*.ts"],
     extends: [
       js.configs.recommended,
       ...tseslint.configs.recommendedTypeChecked,
