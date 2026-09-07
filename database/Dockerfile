@@ -1,4 +1,4 @@
-FROM postgis/postgis:18-3.6-alpine@sha256:eb2e8b8afd9b0ecee83bc20fd01aca62a5071bada2c0f38763174b653f8eed42
+FROM postgis/postgis:18-3.6-alpine@sha256:ffcf0c4b904e41b9779f8098007fb5a9484025319c18c70cf8e1bcebb742b9b7
 
 LABEL org.opencontainers.image.title="The Search Database" \
       org.opencontainers.image.description="Non-root PostgreSQL and PostGIS runtime for The Search" \
