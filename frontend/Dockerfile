@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.20
 
 ARG NODE_IMAGE=node:24.14.1-alpine@sha256:8510330d3eb72c804231a834b1a8ebb55cb3796c3e4431297a24d246b8add4d5
-ARG NGINX_IMAGE=nginxinc/nginx-unprivileged:stable-alpine@sha256:44e36330f74d4f3a1d4e222acca9e23b401fb87811a7597024502bb759c4dd49
+ARG NGINX_IMAGE=nginxinc/nginx-unprivileged:stable-alpine@sha256:442753882674b49ae2c1de83ed67896131c0777f56df5005e356e62bc3f7e7ce
 
 FROM ${NODE_IMAGE} AS build
 
@@ -14,12 +14,6 @@ COPY . ./
 RUN npm run build
 
 FROM ${NGINX_IMAGE}
-
-# The pinned base still ships OpenSSL packages affected by CVE-2026-14456.
-USER root
-RUN apk add --no-cache --upgrade \
-    libcrypto3=3.5.8-r0 \
-    libssl3=3.5.8-r0
 
 LABEL org.opencontainers.image.title="The Search PWA" \
       org.opencontainers.image.description="Installable client for explainable, personalized surf recommendations" \
