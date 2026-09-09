@@ -1,6 +1,11 @@
+import { createUserDataClient, type UserDataClient } from "./api/userData";
+import { ProfileSection } from "./features/profile/ProfileSection";
+import { FavoriteSpotsSection } from "./features/spots/FavoriteSpotsSection";
 import { useServiceStatus } from "./hooks/useServiceStatus";
 
-export function App() {
+const userDataClient = createUserDataClient();
+
+export function App({ client = userDataClient }: { client?: UserDataClient }) {
   const { status, refresh } = useServiceStatus();
 
   return (
@@ -33,14 +38,12 @@ export function App() {
         )}
       </section>
 
-      <section className="next-card" aria-labelledby="next-heading">
-        <p className="section-label">Foundation milestone</p>
-        <h2 id="next-heading">The forecast journey comes next.</h2>
-        <p>
-          This first slice verifies the mobile client, API boundary, offline
-          behavior, and release identity before surf-domain logic is introduced.
-        </p>
-      </section>
+      {status.kind === "available" && (
+        <div className="workspace" aria-label="Personal surf setup">
+          <ProfileSection client={client} />
+          <FavoriteSpotsSection client={client} />
+        </div>
+      )}
     </main>
   );
 }

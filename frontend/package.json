@@ -8,21 +8,31 @@
     "npm": ">=11.11.0"
   },
   "scripts": {
+    "api:generate": "openapi-ts --no-log-file",
+    "api:check": "node scripts/check-openapi-generated.mjs",
     "dev": "vite",
+    "preview": "vite preview",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint . --max-warnings=0",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "test:browser": "playwright test",
     "build": "tsc -b && vite build",
-    "verify": "npm run format:check && npm run lint && npm run test:coverage && npm run build"
+    "verify": "npm run api:check && npm run format:check && npm run lint && npm run test:coverage && npm run build"
   },
   "dependencies": {
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "zod": "4.4.3"
+  },
+  "overrides": {
+    "js-yaml": "4.3.2"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
+    "@hey-api/openapi-ts": "0.99.0",
+    "@playwright/test": "1.62.1",
     "@testing-library/jest-dom": "7.0.1",
     "@testing-library/react": "16.3.2",
     "@testing-library/user-event": "14.6.6",

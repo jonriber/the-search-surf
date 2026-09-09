@@ -29,5 +29,6 @@ Accepted records are historical evidence. When a decision changes, add a new ADR
 - [0014 — Use forward-only SQL migrations and use-case transactions](0014-use-forward-only-sql-migrations-and-use-case-transactions.md)
 - [0015 — Use pgx, goose, and disposable PostGIS integration tests](0015-use-pgx-goose-and-disposable-postgis-integration-tests.md)
 - [0016 — Provision bootstrap principals before API startup](0016-provision-bootstrap-principals-before-api-startup.md)
+- [0017 — Generate browser contract artifacts from OpenAPI](0017-generate-browser-contract-artifacts-from-openapi.md)
 
 Use [`template.md`](template.md) for new records.

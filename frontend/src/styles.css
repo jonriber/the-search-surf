@@ -42,7 +42,15 @@ button {
   cursor: pointer;
 }
 
-button:focus-visible {
+button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+[tabindex="-1"]:focus-visible {
   outline: 3px solid #f8c86b;
   outline-offset: 3px;
 }
@@ -95,7 +103,7 @@ h2 {
 }
 
 .status-card,
-.next-card {
+.content-card {
   border: 1px solid rgba(155, 213, 207, 0.18);
   border-radius: 1.35rem;
   padding: clamp(1.3rem, 4vw, 2rem);
@@ -116,8 +124,146 @@ h2 {
   grid-column: 1 / -1;
 }
 
-.next-card {
+.workspace {
+  display: grid;
+  gap: 1rem;
   margin-top: 1rem;
+}
+
+.content-card h2,
+.content-card h3 {
+  margin-bottom: 0.6rem;
+}
+
+.card-copy,
+.content-card > p,
+.empty-state p,
+.spot-card p {
+  color: #b6ceca;
+  line-height: 1.55;
+}
+
+.section-heading-row {
+  display: flex;
+  gap: 1rem;
+  align-items: start;
+  justify-content: space-between;
+}
+
+.stacked-form {
+  display: grid;
+  gap: 1rem;
+  max-width: 38rem;
+  margin-top: 1.25rem;
+}
+
+.stacked-form label {
+  display: grid;
+  gap: 0.45rem;
+  color: #d8efec;
+  font-weight: 700;
+}
+
+input,
+select {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid rgba(155, 213, 207, 0.45);
+  border-radius: 0.75rem;
+  padding: 0.75rem 0.85rem;
+  color: #f5fffd;
+  background: #082936;
+  font: inherit;
+}
+
+input::placeholder {
+  color: #91aaa6;
+}
+
+.coordinate-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.form-actions,
+.spot-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.secondary-button {
+  color: #baf7f1;
+  background: transparent;
+}
+
+.feedback {
+  border-radius: 0.9rem;
+  padding: 0.9rem 1rem;
+  margin: 1rem 0;
+}
+
+.feedback p {
+  margin-bottom: 0.75rem;
+}
+
+.feedback.error {
+  border: 1px solid #ff9f91;
+  color: #ffe7e2;
+  background: rgba(121, 33, 25, 0.42);
+}
+
+.feedback.success {
+  border: 1px solid #65ddae;
+  color: #d8ffed;
+  background: rgba(15, 97, 68, 0.38);
+}
+
+.empty-state {
+  border: 1px dashed rgba(155, 213, 207, 0.35);
+  border-radius: 1rem;
+  padding: 1.2rem;
+  margin-top: 1rem;
+}
+
+.spot-form {
+  border-top: 1px solid rgba(155, 213, 207, 0.2);
+  border-bottom: 1px solid rgba(155, 213, 207, 0.2);
+  padding: 1.25rem 0;
+}
+
+.spot-list {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0;
+  margin: 1rem 0 0;
+  list-style: none;
+}
+
+.spot-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: center;
+  border: 1px solid rgba(155, 213, 207, 0.2);
+  border-radius: 1rem;
+  padding: 1rem;
+  background: rgba(3, 18, 25, 0.45);
+}
+
+.spot-card p {
+  margin-bottom: 0.25rem;
+}
+
+.spot-card .coordinates {
+  color: #82e7dd;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9rem;
+}
+
+.spot-actions {
+  justify-content: end;
 }
 
 .build-details {
@@ -153,6 +299,22 @@ h2 {
 
   .status-card button {
     width: 100%;
+  }
+
+  .section-heading-row,
+  .spot-card {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .section-heading-row button,
+  .spot-actions button,
+  .form-actions button {
+    width: 100%;
+  }
+
+  .coordinate-fields {
+    grid-template-columns: 1fr;
   }
 }
 
