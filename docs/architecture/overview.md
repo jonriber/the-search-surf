@@ -74,3 +74,9 @@ Module boundaries are not service boundaries. Extraction requires evidence such 
 - Administrative surfaces remain reachable only through the private network.
 
 The current verified runtime is Docker Compose with loopback-only host ports, read-only filesystems, dropped Linux capabilities, and non-root processes. Kubernetes and Argo CD are target-state capabilities and must not be documented as operational until verified.
+
+## Forecast provider boundary
+
+[ADR 0018](../adr/0018-use-open-meteo-behind-a-provider-neutral-forecast-port.md) selects Open-Meteo for the first forecast ingestion adapter. The application depends on a provider-neutral batch port using canonical SI measurements and explicit missing values. Provider model names remain opaque provenance rather than domain vocabulary.
+
+Persisted ingestion uses explicit component models and brackets data calls with model-metadata reads so source issue times remain attributable and a rollout cannot silently mix model runs. Timeout, retry, circuit-breaker, and shared quota-budget behavior lives at the outbound provider boundary. The detailed contract is documented in [Forecast Provider Contract](forecast-provider-contract.md).
