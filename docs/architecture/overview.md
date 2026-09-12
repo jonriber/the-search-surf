@@ -11,7 +11,7 @@ Forecast providers ──► The Search ──► Surfer
 
 The Search consumes untrusted external forecast data, applies versioned domain rules, stores recommendations and provenance, and presents results through an installable PWA.
 
-## Implemented foundation slice
+## Implemented foundation and forecast slice
 
 ```text
 Browser / installed PWA ──► unprivileged nginx ──/api/*──► Go API
@@ -27,6 +27,10 @@ PostGIS ──healthy──► forward-only migrator ──completed──► Go
 PWA ──same origin──► HTTP adapter ──trusted principal──► use cases
                                                │
                                                └── transaction-scoped pgx repositories
+
+external scheduler ──► one-shot forecast worker ──► Open-Meteo
+                                │
+                                └── ingestion-only role ──► canonical forecast tables
 ```
 
 The browser uses only same-origin `/api` URLs. nginx owns routing at the deployment edge, so the PWA does not embed a homelab address and the API does not need permissive cross-origin rules. The client caches the application shell and the last successfully validated release identity; it does not cache arbitrary API responses.
@@ -80,3 +84,5 @@ The current verified runtime is Docker Compose with loopback-only host ports, re
 [ADR 0018](../adr/0018-use-open-meteo-behind-a-provider-neutral-forecast-port.md) selects Open-Meteo for the first forecast ingestion adapter. The application depends on a provider-neutral batch port using canonical SI measurements and explicit missing values. Provider model names remain opaque provenance rather than domain vocabulary.
 
 Persisted ingestion uses explicit component models and brackets data calls with model-metadata reads so source issue times remain attributable and a rollout cannot silently mix model runs. Timeout, retry, circuit-breaker, and shared quota-budget behavior lives at the outbound provider boundary. The detailed contract is documented in [Forecast Provider Contract](forecast-provider-contract.md).
+
+The implemented worker validates and atomically persists normalized batches, uses deterministic replay keys, and quarantines malformed payload evidence without exposing it to the API role. The storage graph, operational limits, and tide terminology are documented in [Forecast Ingestion](forecast-ingestion.md).

@@ -38,7 +38,7 @@ The interface accepts a batch of application-owned forecast points and an inclus
 
 Every data request sets `timezone=GMT`; metric length and metres-per-second wind units are explicit. Marine requests prefer sea grid cells. The adapter records each component's sampled coordinates and native temporal resolution. Different model grids are expected and remain visible in provenance. Components are joined only on exact hourly valid times; the adapter never invents spatial or temporal interpolation, and absent component values remain explicit missing measurements.
 
-For each component, read model metadata before and after the forecast payload. Accept the payload only when `last_run_initialisation_time` is unchanged and `last_run_availability_time` is at least ten minutes old. Persist initialization as source issue time and availability separately when issue #9 introduces storage. If a future component genuinely has no issuance concept, represent that fact explicitly; do not substitute fetch time.
+For each component, read model metadata before and after the forecast payload. Accept the payload only when `last_run_initialisation_time` is unchanged and `last_run_availability_time` is at least ten minutes old. Persistence records initialization as source issue time and availability separately. If a future component genuinely has no issuance concept, represent that fact explicitly; do not substitute fetch time.
 
 ## Error and orchestration semantics
 
@@ -56,6 +56,6 @@ Cancellation from the caller is preserved as `context.Canceled` or `context.Dead
 
 - Domain tests cover point, coordinate, finite-measurement, and explicit-missingness invariants.
 - Port tests cover UTC normalization, hourly windows, stable correlation, duplicate references, and defensive copying.
-- The Open-Meteo adapter in issue #9 must use recorded fixtures for unit conversion, nulls, array mismatches, sampled-grid changes, metadata rollover, error classification, and attribution.
+- The Open-Meteo adapter uses recorded fixtures for canonical units, nulls, array mismatches, sampled-grid changes, metadata rollover, error classification, and attribution.
 - Provider contract tests must run against a fake HTTP server; live-provider probes are optional diagnostics and never gate deterministic CI.
 - A scheduled, non-blocking canary may detect upstream contract drift without using private coordinates.

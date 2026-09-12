@@ -21,7 +21,9 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} \
     go build -trimpath -ldflags="-s -w" -o /out/migrate ./cmd/migrate && \
     CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} \
-    go build -trimpath -ldflags="-s -w" -o /out/bootstrap-principal ./cmd/bootstrap-principal
+    go build -trimpath -ldflags="-s -w" -o /out/bootstrap-principal ./cmd/bootstrap-principal && \
+    CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} \
+    go build -trimpath -ldflags="-s -w" -o /out/ingest-forecast ./cmd/ingest-forecast
 
 FROM scratch AS api
 
@@ -71,3 +73,19 @@ USER 65532:65532
 ENV BOOTSTRAP_TIMEOUT=30s
 
 ENTRYPOINT ["/bootstrap-principal"]
+
+FROM scratch AS forecast-ingestion
+
+LABEL org.opencontainers.image.title="The Search Forecast Ingester" \
+      org.opencontainers.image.description="One-shot normalized forecast ingestion worker for The Search" \
+      org.opencontainers.image.source="https://github.com/jonriber/the-search-surf" \
+      org.opencontainers.image.licenses="Apache-2.0"
+
+COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=build --chown=65532:65532 /out/ingest-forecast /ingest-forecast
+
+USER 65532:65532
+ENV FORECAST_TIMEOUT=30s \
+    FORECAST_HORIZON=72h
+
+ENTRYPOINT ["/ingest-forecast"]

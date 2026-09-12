@@ -101,6 +101,28 @@ services:
       - no-new-privileges:true
     restart: "no"
 
+  forecast-ingest:
+    profiles: ["forecast"]
+    image: the-search-forecast-ingestion:local
+    build:
+      context: ./backend
+      target: forecast-ingestion
+    environment:
+      FORECAST_DATABASE_URL: postgres://the_search_ingester:${THE_SEARCH_DATABASE_INGESTER_PASSWORD:-local-ingester-only}@database:5432/the_search?sslmode=disable
+      FORECAST_HORIZON: ${THE_SEARCH_FORECAST_HORIZON:-72h}
+      OPEN_METEO_ACCOUNT_SCOPE: ${THE_SEARCH_OPEN_METEO_ACCOUNT_SCOPE:-non-commercial-free}
+      OPEN_METEO_DAILY_LIMIT: ${THE_SEARCH_OPEN_METEO_DAILY_LIMIT:-8000}
+      OPEN_METEO_MONTHLY_LIMIT: ${THE_SEARCH_OPEN_METEO_MONTHLY_LIMIT:-240000}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    restart: "no"
+
   api:
     image: the-search-api:local
     build:
