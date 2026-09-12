@@ -12,6 +12,7 @@ services:
       POSTGRES_DB: the_search
       THE_SEARCH_MIGRATOR_PASSWORD: ${THE_SEARCH_DATABASE_MIGRATOR_PASSWORD:-local-migrator-only}
       THE_SEARCH_APPLICATION_PASSWORD: ${THE_SEARCH_DATABASE_APPLICATION_PASSWORD:-local-app-only}
+      THE_SEARCH_INGESTER_PASSWORD: ${THE_SEARCH_DATABASE_INGESTER_PASSWORD:-local-ingester-only}
     ports:
       - "127.0.0.1:${THE_SEARCH_DATABASE_PORT:-5432}:5432"
     volumes:
@@ -34,6 +35,33 @@ services:
       start_period: 10s
     stop_grace_period: 30s
 
+  database-roles:
+    image: the-search-database:local
+    platform: linux/amd64
+    entrypoint: ["/bin/sh", "/roles.sh"]
+    environment:
+      POSTGRES_HOST: database
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${THE_SEARCH_DATABASE_ADMIN_PASSWORD:-local-admin-only}
+      PGPASSWORD: ${THE_SEARCH_DATABASE_ADMIN_PASSWORD:-local-admin-only}
+      POSTGRES_DB: the_search
+      THE_SEARCH_MIGRATOR_PASSWORD: ${THE_SEARCH_DATABASE_MIGRATOR_PASSWORD:-local-migrator-only}
+      THE_SEARCH_APPLICATION_PASSWORD: ${THE_SEARCH_DATABASE_APPLICATION_PASSWORD:-local-app-only}
+      THE_SEARCH_INGESTER_PASSWORD: ${THE_SEARCH_DATABASE_INGESTER_PASSWORD:-local-ingester-only}
+    volumes:
+      - ./database/init/20-the-search-roles.sh:/roles.sh:ro
+    depends_on:
+      database:
+        condition: service_healthy
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    restart: "no"
+
   migrate:
     image: the-search-migrate:local
     build:
@@ -45,8 +73,8 @@ services:
       MIGRATION_DATABASE_URL: postgres://the_search_migrator:${THE_SEARCH_DATABASE_MIGRATOR_PASSWORD:-local-migrator-only}@database:5432/the_search?sslmode=disable
       MIGRATION_TIMEOUT: 2m
     depends_on:
-      database:
-        condition: service_healthy
+      database-roles:
+        condition: service_completed_successfully
     read_only: true
     cap_drop:
       - ALL
@@ -63,6 +91,28 @@ services:
       BOOTSTRAP_DATABASE_URL: postgres://the_search_migrator:${THE_SEARCH_DATABASE_MIGRATOR_PASSWORD:-local-migrator-only}@database:5432/the_search?sslmode=disable
       BOOTSTRAP_PRINCIPAL_ID: ${THE_SEARCH_BOOTSTRAP_PRINCIPAL_ID:-2f404f62-3d6f-4e5f-a2e8-1be44b08f05c}
       BOOTSTRAP_TIMEOUT: 30s
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    restart: "no"
+
+  forecast-ingest:
+    profiles: ["forecast"]
+    image: the-search-forecast-ingestion:local
+    build:
+      context: ./backend
+      target: forecast-ingestion
+    environment:
+      FORECAST_DATABASE_URL: postgres://the_search_ingester:${THE_SEARCH_DATABASE_INGESTER_PASSWORD:-local-ingester-only}@database:5432/the_search?sslmode=disable
+      FORECAST_HORIZON: ${THE_SEARCH_FORECAST_HORIZON:-72h}
+      OPEN_METEO_ACCOUNT_SCOPE: ${THE_SEARCH_OPEN_METEO_ACCOUNT_SCOPE:-non-commercial-free}
+      OPEN_METEO_DAILY_LIMIT: ${THE_SEARCH_OPEN_METEO_DAILY_LIMIT:-8000}
+      OPEN_METEO_MONTHLY_LIMIT: ${THE_SEARCH_OPEN_METEO_MONTHLY_LIMIT:-240000}
     depends_on:
       migrate:
         condition: service_completed_successfully

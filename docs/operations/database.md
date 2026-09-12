@@ -4,15 +4,16 @@
 
 The local database is PostgreSQL 18 with PostGIS 3.6. A minimal project image derives from the digest-pinned official Alpine variant, removes its unused privilege-transition helper, and runs directly as the existing PostgreSQL UID/GID 70 with all Linux capabilities dropped. It runs as `linux/amd64`; Apple Silicon development therefore uses Docker's amd64 emulation. This gives every environment the same tested image at the cost of slower startup and migration tests on arm64 workstations.
 
-Three database roles keep privileges separated:
+Four database roles keep privileges separated:
 
 | Role | Responsibility | Privileges |
 | --- | --- | --- |
 | `postgres` | local bootstrap and recovery administration | superuser; never used by an application process |
 | `the_search_migrator` | apply versioned schema migrations | non-superuser; can create objects only in the `the_search` database |
 | `the_search_app` | serve application use cases | non-superuser; limited table and sequence access governed by row-level security |
+| `the_search_ingester` | fetch and persist global forecast inputs | non-superuser; reads forecast points and writes ingestion, rejection, and quota tables; cannot read principals or private surf spots |
 
-The role initializer runs only when PostgreSQL creates an empty data directory. Changing a password in `.env` does not rotate an existing role. Production credentials must come from the private environment repository's secret-management path, not from this public repository or Kubernetes manifests in plaintext.
+PostgreSQL runs the role initializer when it creates an empty data directory. Compose also runs that same idempotent script as a short-lived `database-roles` service before migrations, so an existing volume can receive newly introduced roles and local password changes. Production credentials must come from the private environment repository's secret-management path, not from this public repository or Kubernetes manifests in plaintext. A non-Compose deployment needs an equivalent privileged role-provisioning step before schema migrations.
 
 ## Local lifecycle
 
@@ -51,7 +52,7 @@ Migrations are embedded into the dedicated Go migration binary and use the `the_
 
 There is no `down` command. Once shared, a migration is immutable; correcting it requires a new forward migration. This avoids pretending that destructive schema changes have a universally safe inverse. Restore from a verified backup when a forward fix cannot preserve data or availability.
 
-Each application request that touches user-owned data begins a transaction, sets `app.principal_id` with transaction-local scope, executes the use case, and commits or rolls back. Forced row-level security fails closed when that context is missing. The API uses only `the_search_app`; the short-lived bootstrap command uses the migrator role to idempotently provision the configured principal before API startup.
+Each application request that touches user-owned data begins a transaction, sets `app.principal_id` with transaction-local scope, executes the use case, and commits or rolls back. Forced row-level security fails closed when that context is missing. The API uses only `the_search_app`; the short-lived bootstrap command uses the migrator role to idempotently provision the configured principal before API startup. The one-shot forecast worker uses only `the_search_ingester`, whose grants exclude all user-owned tables and raw-payload/rejection reads from the API.
 
 ## Tests and TDD contract
 

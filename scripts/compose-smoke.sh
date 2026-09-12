@@ -14,8 +14,9 @@ trap cleanup EXIT INT TERM
 export THE_SEARCH_DATABASE_PORT="${database_port}"
 
 docker compose --project-name "${project_name}" up --build --detach --wait --wait-timeout 120
+docker compose --project-name "${project_name}" build forecast-ingest
 
-docker compose --project-name "${project_name}" run --rm migrate version | grep --quiet '"current_version":1'
+docker compose --project-name "${project_name}" run --rm migrate version | grep --quiet '"current_version":2'
 docker compose --project-name "${project_name}" run --rm bootstrap | grep --quiet '"status":"existing"'
 
 curl --fail --silent --show-error http://127.0.0.1:8080/health/live >/dev/null
