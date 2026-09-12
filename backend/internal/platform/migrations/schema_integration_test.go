@@ -24,6 +24,7 @@ func TestInitialSchemaContract(t *testing.T) {
 	ctx := context.Background()
 	migrationDB := openRequiredDatabase(t, "TEST_MIGRATION_DATABASE_URL")
 	applicationDB := openRequiredDatabase(t, "TEST_APPLICATION_DATABASE_URL")
+	ingesterDB := openRequiredDatabase(t, "TEST_INGESTER_DATABASE_URL")
 
 	provider, err := migrations.NewGooseProvider(migrationDB)
 	if err != nil {
@@ -35,19 +36,19 @@ func TestInitialSchemaContract(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Up() error = %v", err)
 		}
-		if !slices.Equal(applied, []int64{1}) {
-			t.Fatalf("applied versions = %v, want [1]", applied)
+		if !slices.Equal(applied, []int64{1, 2}) {
+			t.Fatalf("applied versions = %v, want [1 2]", applied)
 		}
-		if version != 1 {
-			t.Fatalf("version = %d, want 1", version)
+		if version != 2 {
+			t.Fatalf("version = %d, want 2", version)
 		}
 
 		applied, version, err = provider.Up(ctx)
 		if err != nil {
 			t.Fatalf("second Up() error = %v", err)
 		}
-		if len(applied) != 0 || version != 1 {
-			t.Fatalf("second Up() = (%v, %d), want ([], 1)", applied, version)
+		if len(applied) != 0 || version != 2 {
+			t.Fatalf("second Up() = (%v, %d), want ([], 2)", applied, version)
 		}
 	})
 
@@ -56,12 +57,13 @@ func TestInitialSchemaContract(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Status() error = %v", err)
 		}
-		if len(statuses) != 1 || statuses[0].Version != 1 || statuses[0].State != migrations.StateApplied {
-			t.Fatalf("statuses = %#v, want one applied version", statuses)
+		if len(statuses) != 2 || statuses[0].Version != 1 || statuses[1].Version != 2 ||
+			statuses[0].State != migrations.StateApplied || statuses[1].State != migrations.StateApplied {
+			t.Fatalf("statuses = %#v, want applied versions 1 and 2", statuses)
 		}
 		version, err := provider.Version(ctx)
-		if err != nil || version != 1 {
-			t.Fatalf("Version() = (%d, %v), want (1, nil)", version, err)
+		if err != nil || version != 2 {
+			t.Fatalf("Version() = (%d, %v), want (2, nil)", version, err)
 		}
 	})
 
@@ -85,6 +87,16 @@ func TestInitialSchemaContract(t *testing.T) {
 		if !indexExists {
 			t.Fatal("spatial index does not exist")
 		}
+		if err := migrationDB.QueryRowContext(ctx, `
+			SELECT EXISTS (
+				SELECT 1 FROM pg_indexes
+				WHERE schemaname = 'public' AND indexname = 'forecast_points_position_gist_idx'
+			)`).Scan(&indexExists); err != nil {
+			t.Fatalf("query forecast spatial index: %v", err)
+		}
+		if !indexExists {
+			t.Fatal("forecast spatial index does not exist")
+		}
 	})
 
 	seedPrincipals(t, ctx, migrationDB)
@@ -107,7 +119,7 @@ func TestInitialSchemaContract(t *testing.T) {
 		rows, err := migrationDB.QueryContext(ctx, `
 			SELECT rolname, rolsuper, rolcreatedb, rolcreaterole, rolbypassrls
 			FROM pg_roles
-			WHERE rolname IN ('the_search_migrator', 'the_search_app')
+			WHERE rolname IN ('the_search_migrator', 'the_search_app', 'the_search_ingester')
 			ORDER BY rolname
 		`)
 		if err != nil {
@@ -137,24 +149,68 @@ func TestInitialSchemaContract(t *testing.T) {
 		if err := rows.Err(); err != nil {
 			t.Fatalf("iterate role privileges: %v", err)
 		}
-		if count != 2 {
-			t.Fatalf("role count = %d, want 2", count)
+		if count != 3 {
+			t.Fatalf("role count = %d, want 3", count)
 		}
 
-		var migratorCanCreate, applicationCanCreate bool
+		var migratorCanCreate, applicationCanCreate, ingesterCanCreate bool
 		if err := migrationDB.QueryRowContext(ctx, `
 			SELECT
 				has_schema_privilege('the_search_migrator', 'public', 'CREATE'),
-				has_schema_privilege('the_search_app', 'public', 'CREATE')
-		`).Scan(&migratorCanCreate, &applicationCanCreate); err != nil {
+				has_schema_privilege('the_search_app', 'public', 'CREATE'),
+				has_schema_privilege('the_search_ingester', 'public', 'CREATE')
+		`).Scan(&migratorCanCreate, &applicationCanCreate, &ingesterCanCreate); err != nil {
 			t.Fatalf("query schema privileges: %v", err)
 		}
-		if !migratorCanCreate || applicationCanCreate {
+		if !migratorCanCreate || applicationCanCreate || ingesterCanCreate {
 			t.Fatalf(
-				"schema create privileges = migrator:%t application:%t, want true/false",
+				"schema create privileges = migrator:%t application:%t ingester:%t, want true/false/false",
 				migratorCanCreate,
 				applicationCanCreate,
+				ingesterCanCreate,
 			)
+		}
+	})
+
+	t.Run("isolates ingestion from private and operational data", func(t *testing.T) {
+		var canReadPoints, canWriteBatches, canWriteQuota bool
+		if err := migrationDB.QueryRowContext(ctx, `
+			SELECT
+				has_table_privilege('the_search_ingester', 'public.forecast_points', 'SELECT'),
+				has_table_privilege('the_search_ingester', 'public.forecast_batches', 'INSERT'),
+				has_table_privilege('the_search_ingester', 'public.provider_quota_usage', 'UPDATE')
+		`).Scan(&canReadPoints, &canWriteBatches, &canWriteQuota); err != nil {
+			t.Fatalf("query ingestion privileges: %v", err)
+		}
+		if !canReadPoints || !canWriteBatches || !canWriteQuota {
+			t.Fatalf(
+				"ingestion privileges = points:%t batches:%t quota:%t, want true/true/true",
+				canReadPoints,
+				canWriteBatches,
+				canWriteQuota,
+			)
+		}
+
+		var canReadPrincipals, canReadSpots, appCanReadPayloads bool
+		if err := migrationDB.QueryRowContext(ctx, `
+			SELECT
+				has_table_privilege('the_search_ingester', 'public.principals', 'SELECT'),
+				has_table_privilege('the_search_ingester', 'public.surf_spots', 'SELECT'),
+				has_table_privilege('the_search_app', 'public.forecast_payloads', 'SELECT')
+		`).Scan(&canReadPrincipals, &canReadSpots, &appCanReadPayloads); err != nil {
+			t.Fatalf("query denied ingestion privileges: %v", err)
+		}
+		if canReadPrincipals || canReadSpots || appCanReadPayloads {
+			t.Fatalf(
+				"denied privileges = principals:%t spots:%t application-payloads:%t, want false/false/false",
+				canReadPrincipals,
+				canReadSpots,
+				appCanReadPayloads,
+			)
+		}
+
+		if err := ingesterDB.QueryRowContext(ctx, "SELECT count(*) FROM principals").Scan(new(int)); err == nil {
+			t.Fatal("ingester selected private principals, want permission denial")
 		}
 	})
 
