@@ -43,7 +43,7 @@ The database must prove that the favorite and referenced spot have the same owne
 
 `ForecastPoint` is a provider-specific sampling location, not a property of `SurfSpot`. The future ingestion model will record provider, model, grid or location key, sampling position, selection algorithm version, and validity interval. A versioned mapping will explain which forecast points informed a spot recommendation.
 
-The first transactional schema does not create forecast tables. Issue #11 selects the provider contract, and issue #9 will add the ingestion schema without changing private spot identity.
+The forecast ingestion schema keeps provider sampling points separate from private spot identity. It stores immutable canonical batches, component sources, hourly observations, payload checksums, rejections, and shared provider quota usage. A future mapping will record which versioned forecast points inform each spot recommendation.
 
 ## Relationship model
 

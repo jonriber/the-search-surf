@@ -4,7 +4,7 @@ The Search is an open-source, self-hostable surf intelligence PWA that combines 
 
 ## Status
 
-The project is in its foundation phase. A production-shaped vertical slice now proves the installable PWA, same-origin ownership-safe profile and favorite APIs, hardened containers, forward-only PostGIS migrations, user-data isolation, and pull-request quality gates. Forecast ingestion and recommendation behavior are the next milestones.
+The project has a production-shaped foundation plus a one-shot forecast-ingestion slice: an installable PWA, same-origin ownership-safe profile and favorite APIs, hardened containers, forward-only PostGIS migrations, user-data isolation, an Open-Meteo adapter behind a provider-neutral port, normalized provenance-aware forecast persistence, and pull-request quality gates. Recommendation behavior is the next milestone.
 
 ## Product objective
 
@@ -77,6 +77,8 @@ make compose-smoke
 ```
 
 For an interactive local stack, run `make compose-up` and open <http://127.0.0.1:8081>. The stack waits for PostgreSQL and applies pending migrations before starting the API. Stop it with `make compose-down`. See [database operations](docs/operations/database.md) before resetting data or changing migrations.
+
+Forecast ingestion is a separate one-shot process intended for an external scheduler. After provisioning a forecast sampling point, run `docker compose --profile forecast run --rm forecast-ingest`. See [forecast ingestion](docs/architecture/forecast-ingestion.md) for the data model, safety boundaries, and configuration.
 
 ## Contributing
 

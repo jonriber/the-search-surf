@@ -3,6 +3,7 @@ SHELL := /bin/sh
 API_BINARY := bin/api
 MIGRATION_BINARY := bin/migrate
 BOOTSTRAP_BINARY := bin/bootstrap-principal
+FORECAST_INGEST_BINARY := bin/ingest-forecast
 PACKAGES := ./...
 GOCACHE ?= $(abspath ../.cache/go-build)
 GOMODCACHE ?= $(abspath ../.cache/go-mod)
@@ -44,8 +45,9 @@ build:
 	go build -trimpath -o $(API_BINARY) ./cmd/api
 	go build -trimpath -o $(MIGRATION_BINARY) ./cmd/migrate
 	go build -trimpath -o $(BOOTSTRAP_BINARY) ./cmd/bootstrap-principal
+	go build -trimpath -o $(FORECAST_INGEST_BINARY) ./cmd/ingest-forecast
 
 verify: format-check vet lint vulnerability-check test test-race build
 
 clean:
-	rm -f $(API_BINARY) $(MIGRATION_BINARY) $(BOOTSTRAP_BINARY)
+	rm -f $(API_BINARY) $(MIGRATION_BINARY) $(BOOTSTRAP_BINARY) $(FORECAST_INGEST_BINARY)
