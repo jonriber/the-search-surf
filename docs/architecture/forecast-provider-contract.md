@@ -19,14 +19,14 @@ The interface accepts a batch of application-owned forecast points and an inclus
 
 ## Canonical output
 
-- Heights are metres, speed is metres per second, periods are seconds, and directions are degrees clockwise from true north in `[0, 360)`.
+- Heights are metres, speed is metres per second, periods are seconds, and directions are degrees clockwise from true north in `[0, 360)`. Wave, swell, and wind directions mean the direction from which they arrive.
 - Sea level is metres relative to mean sea level; it is not mislabeled as a measured beach tide or a navigation-safe water depth.
 - Timestamps are UTC instants. Each series is strictly ordered and contains no duplicate valid time.
 - Missing measurements are explicit. A missing wave, wind, or sea-level value is never converted to zero or forward-filled by the adapter.
 - Provider-returned sampling coordinates are retained per component because wave, wind, and sea-level models use different grids and may move a request to different nearby cells.
 - Invalid ranges, mismatched array lengths, unexpected units, duplicate times, unknown required fields, HTML error bodies, and oversized responses are malformed responses, not partial success.
 
-`forecast.Batch` carries attribution, transformation version, component model references, source issue times, fetch time, and raw-payload SHA-256 digests. Vendor model references are opaque provenance: persistence may store them and diagnostics may display them, but scoring rules cannot branch on them.
+`forecast.Batch` carries attribution, provider-normalization version, component model references, source issue times, fetch time, and raw-payload SHA-256 digests. The current Go field is named `TransformationVersion`; recommendation code treats it as normalization provenance and never confuses it with a spot transformation. Vendor model references are opaque provenance: persistence may store them and diagnostics may display them, but scoring rules cannot branch on them.
 
 ## Open-Meteo mapping
 

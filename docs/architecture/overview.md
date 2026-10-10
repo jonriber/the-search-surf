@@ -86,3 +86,26 @@ The current verified runtime is Docker Compose with loopback-only host ports, re
 Persisted ingestion uses explicit component models and brackets data calls with model-metadata reads so source issue times remain attributable and a rollout cannot silently mix model runs. Timeout, retry, circuit-breaker, and shared quota-budget behavior lives at the outbound provider boundary. The detailed contract is documented in [Forecast Provider Contract](forecast-provider-contract.md).
 
 The implemented worker validates and atomically persists normalized batches, uses deterministic replay keys, and quarantines malformed payload evidence without exposing it to the API role. The storage graph, operational limits, and tide terminology are documented in [Forecast Ingestion](forecast-ingestion.md).
+
+## Recommendation target flow
+
+[ADR 0019](../adr/0019-define-deterministic-recommendation-contract.md) defines the recommendation boundary before its persistence and API are implemented:
+
+```text
+owned versioned configuration + one coherent forecast batch + explicit asOf
+                                  │
+                                  ▼
+                     pure candidate evaluator
+                                  │
+             ┌────────────────────┼────────────────────┐
+             ▼                    ▼                    ▼
+     condition quality    surfer suitability    risk + confidence
+             └────────────────────┼────────────────────┘
+                                  ▼
+                     pure deterministic ranker
+                                  │
+                                  ▼
+             immutable evidence + structured explanation facts
+```
+
+The evaluator and ranker live in the recommendation domain module and have no SQL, HTTP, provider, AI, or clock dependency. Application orchestration owns authorization, coherent forecast selection, transactions, persistence, and the explicit evaluation instant. Explanation adapters may render structured facts but cannot affect evaluation or ordering.

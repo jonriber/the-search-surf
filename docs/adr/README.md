@@ -31,5 +31,6 @@ Accepted records are historical evidence. When a decision changes, add a new ADR
 - [0016 — Provision bootstrap principals before API startup](0016-provision-bootstrap-principals-before-api-startup.md)
 - [0017 — Generate browser contract artifacts from OpenAPI](0017-generate-browser-contract-artifacts-from-openapi.md)
 - [0018 — Use Open-Meteo behind a provider-neutral forecast port](0018-use-open-meteo-behind-a-provider-neutral-forecast-port.md)
+- [0019 — Define the deterministic recommendation contract](0019-define-deterministic-recommendation-contract.md)
 
 Use [`template.md`](template.md) for new records.

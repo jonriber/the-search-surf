@@ -19,7 +19,7 @@ The worker is deliberately separate from the API. Provider latency, retries, and
 ## Canonical persistence graph
 
 - `forecast_points` stores provider sampling coordinates and the version of the selection algorithm. A forecast point is not a private surf spot.
-- `forecast_batches` stores the requested validity window, fetch time, transformation version, attribution, licence, and a deterministic 32-byte idempotency key.
+- `forecast_batches` stores the requested validity window, fetch time, provider-normalization version (in the historical `transformation_version` column), attribution, licence, and a deterministic 32-byte idempotency key.
 - `forecast_sources` stores the exact component model, known/unknown issue-time semantics, availability time, sampled grid coordinate, and native temporal resolution.
 - `forecast_observations` stores nullable hourly SI measurements. Database constraints repeat the application plausibility checks as a corruption backstop.
 - `forecast_payloads` stores a SHA-256 digest per component response. Raw bodies are not stored in PostgreSQL by default.
