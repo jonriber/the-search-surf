@@ -36,19 +36,19 @@ func TestInitialSchemaContract(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Up() error = %v", err)
 		}
-		if !slices.Equal(applied, []int64{1, 2}) {
-			t.Fatalf("applied versions = %v, want [1 2]", applied)
+		if !slices.Equal(applied, []int64{1, 2, 3}) {
+			t.Fatalf("applied versions = %v, want [1 2 3]", applied)
 		}
-		if version != 2 {
-			t.Fatalf("version = %d, want 2", version)
+		if version != 3 {
+			t.Fatalf("version = %d, want 3", version)
 		}
 
 		applied, version, err = provider.Up(ctx)
 		if err != nil {
 			t.Fatalf("second Up() error = %v", err)
 		}
-		if len(applied) != 0 || version != 2 {
-			t.Fatalf("second Up() = (%v, %d), want ([], 2)", applied, version)
+		if len(applied) != 0 || version != 3 {
+			t.Fatalf("second Up() = (%v, %d), want ([], 3)", applied, version)
 		}
 	})
 
@@ -57,13 +57,13 @@ func TestInitialSchemaContract(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Status() error = %v", err)
 		}
-		if len(statuses) != 2 || statuses[0].Version != 1 || statuses[1].Version != 2 ||
-			statuses[0].State != migrations.StateApplied || statuses[1].State != migrations.StateApplied {
-			t.Fatalf("statuses = %#v, want applied versions 1 and 2", statuses)
+		if len(statuses) != 3 || statuses[0].Version != 1 || statuses[1].Version != 2 || statuses[2].Version != 3 ||
+			statuses[0].State != migrations.StateApplied || statuses[1].State != migrations.StateApplied || statuses[2].State != migrations.StateApplied {
+			t.Fatalf("statuses = %#v, want applied versions 1, 2, and 3", statuses)
 		}
 		version, err := provider.Version(ctx)
-		if err != nil || version != 2 {
-			t.Fatalf("Version() = (%d, %v), want (2, nil)", version, err)
+		if err != nil || version != 3 {
+			t.Fatalf("Version() = (%d, %v), want (3, nil)", version, err)
 		}
 	})
 
@@ -219,7 +219,13 @@ func TestInitialSchemaContract(t *testing.T) {
 			SELECT relname, relrowsecurity, relforcerowsecurity
 			FROM pg_class
 			WHERE relnamespace = 'public'::regnamespace
-				AND relname IN ('surfer_profiles', 'surf_spots', 'favorites')
+				AND relname IN (
+					'surfer_profiles', 'surf_spots', 'favorites',
+					'boards', 'surfer_preferences', 'spot_interpretations',
+					'spot_swell_exposures', 'spot_wind_responses',
+					'spot_interpretation_limitations', 'spot_forecast_mappings',
+					'spot_forecast_mapping_points'
+				)
 			ORDER BY relname
 		`)
 		if err != nil {
@@ -242,8 +248,8 @@ func TestInitialSchemaContract(t *testing.T) {
 		if err := rows.Err(); err != nil {
 			t.Fatalf("iterate RLS state: %v", err)
 		}
-		if count != 3 {
-			t.Fatalf("RLS table count = %d, want 3", count)
+		if count != 11 {
+			t.Fatalf("RLS table count = %d, want 11", count)
 		}
 	})
 
@@ -267,6 +273,8 @@ func TestInitialSchemaContract(t *testing.T) {
 
 	createOwnedData(t, ctx, applicationDB, principalA, spotA, "A spot", 0)
 	createOwnedData(t, ctx, applicationDB, principalB, spotB, "B spot", 1)
+	seedForecastPoint(t, ctx, migrationDB)
+	createRecommendationConfiguration(t, ctx, applicationDB, principalA, spotA)
 
 	t.Run("isolates reads by the transaction principal", func(t *testing.T) {
 		tx := beginPrincipalTransaction(t, ctx, applicationDB, principalA)
@@ -304,6 +312,84 @@ func TestInitialSchemaContract(t *testing.T) {
 			INSERT INTO favorites (owner_id, spot_id, sort_position)
 			VALUES ($1, $2, 2)
 		`, "cross-owner favorite insert", principalA, spotB)
+	})
+
+	t.Run("isolates recommendation configuration by owner", func(t *testing.T) {
+		tx := beginPrincipalTransaction(t, ctx, applicationDB, principalA)
+		defer tx.Rollback()
+
+		for _, table := range []string{
+			"boards",
+			"surfer_preferences",
+			"spot_interpretations",
+			"spot_swell_exposures",
+			"spot_wind_responses",
+			"spot_interpretation_limitations",
+			"spot_forecast_mappings",
+			"spot_forecast_mapping_points",
+		} {
+			var count int
+			if err := tx.QueryRowContext(ctx, "SELECT count(*) FROM "+table).Scan(&count); err != nil {
+				t.Fatalf("count %s: %v", table, err)
+			}
+			if count != 1 {
+				t.Fatalf("visible %s rows = %d, want 1", table, count)
+			}
+		}
+
+		other := beginPrincipalTransaction(t, ctx, applicationDB, principalB)
+		defer other.Rollback()
+		var count int
+		if err := other.QueryRowContext(ctx, "SELECT count(*) FROM boards").Scan(&count); err != nil {
+			t.Fatalf("count other-owner boards: %v", err)
+		}
+		if count != 0 {
+			t.Fatalf("other owner saw %d boards, want 0", count)
+		}
+	})
+
+	t.Run("keeps recommendation configuration unavailable to ingestion", func(t *testing.T) {
+		var canReadMappings, canReadPreferences bool
+		if err := migrationDB.QueryRowContext(ctx, `
+			SELECT
+				has_table_privilege('the_search_ingester', 'public.spot_forecast_mappings', 'SELECT'),
+				has_table_privilege('the_search_ingester', 'public.surfer_preferences', 'SELECT')
+		`).Scan(&canReadMappings, &canReadPreferences); err != nil {
+			t.Fatalf("query recommendation ingestion privileges: %v", err)
+		}
+		if canReadMappings || canReadPreferences {
+			t.Fatalf("ingester recommendation privileges = mappings:%t preferences:%t, want false/false", canReadMappings, canReadPreferences)
+		}
+	})
+
+	t.Run("enforces recommendation configuration constraints", func(t *testing.T) {
+		expectPrincipalStatementFailure(t, ctx, applicationDB, principalA, `
+			UPDATE surfer_preferences
+			SET preferred_wave_height_max_mm = comfort_wave_height_max_mm + 1
+			WHERE owner_id = $1
+		`, "preference outside comfort envelope", principalA)
+
+		expectPrincipalStatementFailure(t, ctx, applicationDB, principalA, `
+			UPDATE spot_swell_exposures
+			SET full_circle = true, start_millidegrees = 1, end_millidegrees = 1
+			WHERE owner_id = $1
+		`, "ambiguous full-circle sector", principalA)
+
+		expectPrincipalStatementFailure(t, ctx, applicationDB, principalA, `
+			UPDATE spot_forecast_mappings
+			SET valid_until = valid_from
+			WHERE owner_id = $1
+		`, "empty mapping validity interval", principalA)
+
+		expectPrincipalCommitFailure(t, ctx, applicationDB, principalA, `
+			UPDATE spot_forecast_mapping_points
+			SET weight_basis_points = 9999
+			WHERE owner_id = $1
+		`, "mapping weights below 10000", principalA)
+
+		expectPrincipalCommitFailure(t, ctx, applicationDB, principalA, `
+			DELETE FROM spot_wind_responses WHERE owner_id = $1
+		`, "spot interpretation without wind response", principalA)
 	})
 
 	t.Run("resets principal scope when a transaction ends", func(t *testing.T) {
@@ -393,6 +479,81 @@ func createOwnedData(t *testing.T, ctx context.Context, db *sql.DB, principalID,
 	}
 }
 
+func seedForecastPoint(t *testing.T, ctx context.Context, db *sql.DB) {
+	t.Helper()
+	if _, err := db.ExecContext(ctx, `
+		INSERT INTO forecast_points (id, provider_id, position, selection_algorithm_version, active)
+		VALUES (
+			'33333333-3333-4333-8333-333333333333',
+			'open-meteo',
+			ST_SetSRID(ST_Point(-9.3, 38.8), 4326)::geography,
+			'nearest-sea-grid-v1',
+			false
+		)
+	`); err != nil {
+		t.Fatalf("seed forecast point: %v", err)
+	}
+}
+
+func createRecommendationConfiguration(t *testing.T, ctx context.Context, db *sql.DB, principalID, spotID string) {
+	t.Helper()
+	tx := beginPrincipalTransaction(t, ctx, db, principalID)
+	defer tx.Rollback()
+
+	statements := []string{
+		`INSERT INTO boards (
+			id, owner_id, name,
+			usable_wave_height_min_mm, usable_wave_height_max_mm,
+			usable_swell_period_min_ms, usable_swell_period_max_ms
+		) VALUES ('44444444-4444-4444-8444-444444444444', $1, 'Daily driver', 500, 2500, 6000, 18000)`,
+		`INSERT INTO surfer_preferences (
+			id, owner_id, scope, spot_id,
+			comfort_wave_height_min_mm, comfort_wave_height_max_mm,
+			preferred_wave_height_min_mm, preferred_wave_height_max_mm,
+			comfort_swell_period_min_ms, comfort_swell_period_max_ms,
+			preferred_swell_period_min_ms, preferred_swell_period_max_ms,
+			maximum_comfort_wind_mmps, preferred_maximum_wind_mmps
+		) VALUES (
+			'55555555-5555-4555-8555-555555555555', $1, 'global', NULL,
+			500, 2500, 800, 1800, 6000, 18000, 9000, 14000, 12000, 7000
+		)`,
+		`INSERT INTO spot_interpretations (
+			owner_id, spot_id,
+			supported_wave_height_min_mm, supported_wave_height_max_mm,
+			supported_swell_period_min_ms, supported_swell_period_max_ms,
+			confidence
+		) VALUES ($1, $2, 300, 3000, 6000, 20000, 'low')`,
+		`INSERT INTO spot_swell_exposures (
+			owner_id, spot_id, ordinal, start_millidegrees, end_millidegrees, full_circle, exposure_basis_points
+		) VALUES ($1, $2, 0, 330000, 30000, false, 8000)`,
+		`INSERT INTO spot_wind_responses (
+			owner_id, spot_id, ordinal, start_millidegrees, end_millidegrees, full_circle, relationship
+		) VALUES ($1, $2, 0, 0, 0, true, 'offshore')`,
+		`INSERT INTO spot_interpretation_limitations (owner_id, spot_id, ordinal, limitation)
+		 VALUES ($1, $2, 0, 'Uncalibrated offshore grid input')`,
+		`INSERT INTO spot_forecast_mappings (owner_id, spot_id, valid_from)
+		 VALUES ($1, $2, '2026-10-10T00:00:00Z')`,
+		`INSERT INTO spot_forecast_mapping_points (
+			owner_id, spot_id, forecast_point_id, role, weight_basis_points, selection_provenance
+		) VALUES (
+			$1, $2, '33333333-3333-4333-8333-333333333333', 'primary', 10000, 'nearest-sea-grid-v1'
+		)`,
+	}
+
+	for index, statement := range statements {
+		args := []any{principalID, spotID}
+		if index < 2 {
+			args = []any{principalID}
+		}
+		if _, err := tx.ExecContext(ctx, statement, args...); err != nil {
+			t.Fatalf("insert recommendation configuration statement %d: %v", index, err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		t.Fatalf("commit recommendation configuration: %v", err)
+	}
+}
+
 func beginPrincipalTransaction(t *testing.T, ctx context.Context, db *sql.DB, principalID string) *sql.Tx {
 	t.Helper()
 
@@ -422,6 +583,27 @@ func expectPrincipalStatementFailure(
 	defer tx.Rollback()
 	if _, err := tx.ExecContext(ctx, statement, args...); err == nil {
 		t.Fatalf("%s succeeded, want database rejection", description)
+	}
+}
+
+func expectPrincipalCommitFailure(
+	t *testing.T,
+	ctx context.Context,
+	db *sql.DB,
+	principalID string,
+	statement string,
+	description string,
+	args ...any,
+) {
+	t.Helper()
+
+	tx := beginPrincipalTransaction(t, ctx, db, principalID)
+	if _, err := tx.ExecContext(ctx, statement, args...); err != nil {
+		tx.Rollback()
+		t.Fatalf("%s failed before deferred constraints: %v", description, err)
+	}
+	if err := tx.Commit(); err == nil {
+		t.Fatalf("%s committed, want deferred constraint rejection", description)
 	}
 }
 
