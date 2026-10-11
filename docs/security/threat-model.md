@@ -34,7 +34,7 @@ This document covers the public source repository, build pipeline, PWA, backend,
 | Mutable or substituted container image | Immutable digests, provenance, SBOM, registry and deployment verification |
 | CI-to-cluster credential theft | Pull-based GitOps; no cluster credentials in public CI |
 | Secret committed to Git | Secret scanning, review policy, external or encrypted secret management |
-| Recommendation interpreted as safety guarantee | Separate safety warnings, confidence display, explicit disclaimer |
+| Recommendation interpreted as safety guarantee | Separate known-caution signals, explicit unknown/coverage states, confidence reasons, and non-certification disclaimer |
 | Provider outage or stale data | Timestamped data, freshness policy, graceful degradation |
 | Cross-user data access | Server-side authorization at every resource boundary and tenant-aware schema |
 | Pooled database connection retains another identity | Transaction-local principal setting, fail-closed RLS policies, cross-principal integration tests |

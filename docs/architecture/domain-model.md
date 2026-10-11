@@ -2,7 +2,7 @@
 
 ## Scope
 
-This model defines the first user-owned capability: a principal has one surfer profile, owns private surf spots, and chooses favorites. It establishes the seams needed by forecast ingestion without fixing a provider schema before issue #11 or a preference vocabulary before issue #15.
+This model defines the first user-owned capability: a principal has one surfer profile, owns private surf spots, and chooses favorites. It establishes the seams used by forecast ingestion and recommendation configuration. [ADR 0019](../adr/0019-define-deterministic-recommendation-contract.md) now defines the recommendation vocabulary and invariants; their persistence remains a later additive slice.
 
 The relational model is a contract for issue #18, not an executable migration. [ADR 0015](../adr/0015-use-pgx-goose-and-disposable-postgis-integration-tests.md) selects the migration, driver, database-image, and integration-test tooling within the constraints of [ADR 0004](../adr/0004-use-postgresql-and-postgis.md), [ADR 0013](../adr/0013-enforce-user-ownership-with-postgresql-row-level-security.md), and [ADR 0014](../adr/0014-use-forward-only-sql-migrations-and-use-case-transactions.md).
 
@@ -25,7 +25,7 @@ Identity does not contain surf skill or preference data.
 
 Experience level is an input to suitability, never proof that conditions are safe. Canonical measurements remain SI regardless of display preference.
 
-Condition thresholds, boards, and per-spot preferences are intentionally deferred until issue #15 defines their scoring meaning. Adding unconstrained fields before that decision would make stored values impossible to interpret or reproduce reliably.
+Condition thresholds, boards, and per-spot preferences remain absent from the initial tables. ADR 0019 defines their scoring meaning and requires explicit versioned values; adding unconstrained fields would make stored values impossible to interpret or reproduce reliably.
 
 ### Surf spot
 
@@ -44,6 +44,14 @@ The database must prove that the favorite and referenced spot have the same owne
 `ForecastPoint` is a provider-specific sampling location, not a property of `SurfSpot`. The future ingestion model will record provider, model, grid or location key, sampling position, selection algorithm version, and validity interval. A versioned mapping will explain which forecast points informed a spot recommendation.
 
 The forecast ingestion schema keeps provider sampling points separate from private spot identity. It stores immutable canonical batches, component sources, hourly observations, payload checksums, rejections, and shared provider quota usage. A future mapping will record which versioned forecast points inform each spot recommendation.
+
+### Recommendation contract
+
+Recommendation evaluation is a separate domain boundary. It consumes immutable snapshots of an owned favorite spot, surfer profile and preferences, explicitly selected board, spot interpretation, spot-to-forecast mapping, and one coherent canonical forecast batch. It does not query provider payloads, mutable aggregates, the system clock, PostgreSQL, or HTTP directly.
+
+One candidate represents one spot and one UTC forecast hour. Evaluation returns separate condition quality, surfer suitability, risk signals, data confidence, and eligibility. The application constructs candidates for an explicit window; a pure ranker orders eligible candidates primarily by personal fit using the stable key defined by ADR 0019.
+
+Every score-relevant input is quantized into a versioned integer representation. Recommendation persistence will retain canonical input and output envelopes plus the engine protocol, ruleset hash, configuration versions, forecast provenance, attribution, and SHA-256 digests required for historical replay.
 
 ## Relationship model
 
@@ -112,6 +120,7 @@ Name length, whitespace normalization, supported time zones, and experience tran
 
 - Persist instants as UTC `timestamptz`; use a spot's IANA zone only for local display and daylight-saving conversion.
 - Persist distance and wave height in metres, speed in metres per second, periods in seconds, and directions as degrees clockwise from true north in `[0, 360)`.
+- Wind, wave, and swell directions mean the direction from which they arrive. Circular sectors include both endpoints and explicitly represent a full circle; a wrapped sector such as `330°–30°` includes north.
 - Convert provider units during normalization and user units at presentation boundaries.
 - Never use floating-point equality as a domain identity or deduplication key.
 
@@ -156,7 +165,7 @@ Repositories do not begin or commit transactions, infer the acting owner, return
 
 - Authentication protocol, session management, and account recovery.
 - Forecast provider and canonical forecast schema.
-- Board/equipment model and condition-preference vocabulary.
-- Spot transformation and recommendation persistence.
+- Relational representation and API lifecycle for the ADR 0019 board, preference, spot-interpretation, and mapping contract.
+- Recommendation persistence, retention duration, and replay operations.
 - Shared catalog, publication, collaboration, and moderation.
 - Retention rules once session feedback and recommendation history exist.
